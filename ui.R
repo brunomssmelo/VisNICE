@@ -2,6 +2,7 @@ require(shiny)
 require(shinydashboard)
 require(shinyWidgets)
 require(visNetwork)
+require(shinybusy)
 
 # shiny::shinyUI(
 #   shiny::navbarPage(
@@ -54,6 +55,8 @@ shiny::shinyUI(
         )
     ),
     dashboardBody(
+       # Acrescenta um icone de carregamento
+      add_busy_spinner(spin = "fading-circle", color = "blue", timeout = 1000, position = "full-page"),
       source("./src/ui/proxy_viz_ui.R", local = TRUE, encoding = 'UTF-8')$value,
       source("./src/ui/proxy_data_source_ui.R", local = TRUE, encoding = 'UTF-8')$value,
       source("./src/ui/proxy_graph_structure_ui.R", local = TRUE, encoding = 'UTF-8')$value
