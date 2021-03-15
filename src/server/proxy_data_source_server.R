@@ -26,5 +26,11 @@ dataos <- reactive({
     )
   }
   
+  # atualiza filtro temporal
+  filter_start_date(min(graph_data$a_socio$start, na.rm = T)[1])
+  filter_end_date(max(graph_data$a_socio$end, na.rm = T)[1])
+  data_start_date(min(graph_data$a_socio$start, na.rm = T)[1])
+  data_end_date(max(graph_data$a_socio$end, na.rm = T)[1])
+  
   build_source_graph(graph_data)
 })

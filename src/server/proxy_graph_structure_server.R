@@ -28,13 +28,15 @@ observe({
     selected <- c(input$multiSelectNodesPJ,
                   input$multiSelectNodesPF)
     
+    # atualiza filtro temporal
+    filter_start_date(input$sldFiltroTemporal[1])
+    filter_end_date(input$sldFiltroTemporal[2])
+    
     # atualiza raio de vizinhanca
     ego_radius(input$sldRaioVizinhanca)
     
     # atualiza lista de nós selecionados
     selected_nodes(selected)
-    
-  # }
 })
 
 output$btnDownload <- downloadHandler(
