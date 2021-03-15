@@ -25,10 +25,16 @@ source('./src/funcoes_grafos.R', encoding = "UTF-8")
 
 shinyServer(function(input, output, session){
   
+  sample_data_rds <- read_rds('./dados/sample_data.rds')
+  
   selected_nodes <- reactiveVal(NULL)
   ego_radius <- reactiveVal(1)
-  sample_data <- reactiveVal(read_rds('./dados/sample_data.rds'))
+  sample_data <- reactiveVal(sample_data_rds)
   is_sample_data <- reactiveVal(TRUE)
+  filter_start_date <- reactiveVal(min(sample_data_rds$a_socio$start, na.rm = T)[1])
+  filter_end_date <- reactiveVal(max(sample_data_rds$a_socio$end, na.rm = T)[1])
+  data_start_date <- reactiveVal(min(sample_data_rds$a_socio$start, na.rm = T)[1])
+  data_end_date <- reactiveVal(max(sample_data_rds$a_socio$end, na.rm = T)[1])
   
   source("./src/server/proxy_viz_server.R", local = TRUE, encoding = "UTF-8")
   source("./src/server/proxy_data_source_server.R", local = TRUE, encoding = "UTF-8")

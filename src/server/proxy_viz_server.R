@@ -6,7 +6,7 @@ visNodesEdges <- reactive({
   if(is.null(center_nodes))
     center_nodes <- dataos()$center_nodes
   
-  vnode_ids <- ego_graph_nodes(graph, ego_radius(), center_nodes)
+  vnode_ids <- ego_graph_nodes(graph, radius, center_nodes)
   
   graph_edges <- igraph::as_data_frame(graph, what = 'edges')
   graph_nodes <- igraph::as_data_frame(graph, what = 'vertices') %>% 
@@ -18,6 +18,9 @@ visNodesEdges <- reactive({
   
   vedges <- graph_edges %>%
     filter(from %in% vnode_ids | to %in% vnode_ids) %>%
+    filter((as.Date(start) >= as.Date(filter_start_date())) &
+             (as.Date(end) <= as.Date(filter_end_date()) | end == '...') |
+             role != 'socio') %>%
     unique()
   
   updateSelectInput(session, 'selectFocusNode',
@@ -83,4 +86,12 @@ observe({
 observe({
   visNetworkProxy("network_not_auto") %>%
     visFocus(id = input$selectFocusNode, scale = input$sliderFocusScale)
+})
+
+observe({
+  updateSliderInput(session, 'sldFiltroTemporal',
+                    min = as.Date(data_start_date()),
+                    max = as.Date(data_end_date()),
+                    value = c(as.Date(filter_start_date()),
+                              as.Date(filter_end_date())))
 })
