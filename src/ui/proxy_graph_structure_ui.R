@@ -24,8 +24,7 @@ shiny::tabPanel(
            )
     ),
     column(width = 12, align="center",
-           actionButton("btnRemoveTodosPJ", label = "", icon = icon("angle-double-left", lib = "font-awesome")),
-           actionButton("btnIncluiTodosPJ", label = "", icon = icon("angle-double-right", lib = "font-awesome"))
+           actionButton("btnIncluiTodosPJ", label = "Select/Deselect all")
     )
   ),
   
@@ -43,8 +42,7 @@ shiny::tabPanel(
            )
     ),
     column(width = 12, align="center",
-           actionButton("btnRemoveTodosPF", label = "", icon = icon("angle-double-left", lib = "font-awesome")),
-           actionButton("btnIncluiTodosPF", label = "", icon = icon("angle-double-right", lib = "font-awesome"))
+           actionButton("btnIncluiTodosPF", label = "Select/Deselect all")
     )
   ),
   

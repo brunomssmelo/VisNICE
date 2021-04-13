@@ -22,6 +22,17 @@ observe({
   
   updateMultiInput(session, "multiSelectNodesPF",
                    choices = choices_pf)
+  
+  if(input$btnIncluiTodosPJ %%2 > 0){
+    updateMultiInput(session, "multiSelectNodesPJ",
+                      selected = choices_pj)
+  }
+  
+  if(input$btnIncluiTodosPF %%2 > 0){
+    updateMultiInput(session, "multiSelectNodesPF",
+                      selected = choices_pf)
+  }
+  
 })
 
 observe({
@@ -37,6 +48,7 @@ observe({
     
     # atualiza lista de nós selecionados
     selected_nodes(selected)
+    
 })
 
 output$btnDownload <- downloadHandler(

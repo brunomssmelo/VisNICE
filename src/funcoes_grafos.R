@@ -48,7 +48,7 @@ build_source_graph <- function(graph_data){
   edges <- a_socio %>% 
     mutate(start = as.character(start),
            end = as.character(end),
-           end = if_else(is.na(end), '...', end)) %>% 
+           end = if_else(is.na(end), 'Tempo indefinido', end)) %>% 
     mutate(title = paste0("<p>", role, ":", start, " à ", end, "</p>"),
            color = 'blue')
   
