@@ -51,6 +51,23 @@ observe({
     
 })
 
+observeEvent(input$network_auto_graphChange, {
+  
+  vnodes <- visNodesEdges()$vnodes
+  
+  if(input$network_auto_graphChange$cmd == "addNode") {
+    cat("FUNCIONOU!!")
+    temp = bind_rows(
+      vnodes,
+      data.frame(id = input$network_auto_graphChange$id,
+                 stringsAsFactors = F)
+    )
+    
+    visNodesEdges()$vnodes = temp
+    cat("Fim do IF!")
+  }
+})
+
 output$btnDownload <- downloadHandler(
   filename = function() { 
     paste("dados_grafo_", Sys.time(), ".xlsx", sep="")
@@ -80,3 +97,8 @@ output$btnDownload <- downloadHandler(
                  by = c('destino' = 'id'))
     write_xlsx(data, file)
   })
+
+output$all_nodes = renderTable({
+  vnodes <- visNodesEdges()$vnodes
+  vnodes
+})

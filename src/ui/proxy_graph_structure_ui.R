@@ -24,7 +24,7 @@ shiny::tabPanel(
            )
     ),
     column(width = 12, align="center",
-           actionButton("btnIncluiTodosPJ", label = "Select/Deselect all")
+           actionButton("btnIncluiTodosPJ", label = "Selecionar/Excluir Todos")
     )
   ),
   
@@ -40,10 +40,14 @@ shiny::tabPanel(
              choiceValues = "",
              width = '100%'
            )
+           
     ),
     column(width = 12, align="center",
-           actionButton("btnIncluiTodosPF", label = "Select/Deselect all")
+           actionButton("btnIncluiTodosPF", label = "Selecionar/Excluir Todos")
     )
+  ),
+  fluidRow(
+    tableOutput("all_nodes")
   ),
   
   hr()
