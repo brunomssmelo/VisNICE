@@ -22,6 +22,17 @@ observe({
   
   updateMultiInput(session, "multiSelectNodesPF",
                    choices = choices_pf)
+  
+  if(input$btnIncluiTodosPJ %%2 > 0){
+    updateMultiInput(session, "multiSelectNodesPJ",
+                      selected = choices_pj)
+  }
+  
+  if(input$btnIncluiTodosPF %%2 > 0){
+    updateMultiInput(session, "multiSelectNodesPF",
+                      selected = choices_pf)
+  }
+  
 })
 
 observe({
@@ -37,6 +48,24 @@ observe({
     
     # atualiza lista de nós selecionados
     selected_nodes(selected)
+    
+})
+
+observeEvent(input$network_auto_graphChange, {
+  
+  vnodes <- visNodesEdges()$vnodes
+  
+  if(input$network_auto_graphChange$cmd == "addNode") {
+    cat("FUNCIONOU!!")
+    temp = bind_rows(
+      vnodes,
+      data.frame(id = input$network_auto_graphChange$id,
+                 stringsAsFactors = F)
+    )
+    
+    visNodesEdges()$vnodes = temp
+    cat("Fim do IF!")
+  }
 })
 
 output$btnDownload <- downloadHandler(
@@ -68,3 +97,8 @@ output$btnDownload <- downloadHandler(
                  by = c('destino' = 'id'))
     write_xlsx(data, file)
   })
+
+output$all_nodes = renderTable({
+  vnodes <- visNodesEdges()$vnodes
+  vnodes
+})

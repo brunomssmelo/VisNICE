@@ -24,8 +24,7 @@ shiny::tabPanel(
            )
     ),
     column(width = 12, align="center",
-           actionButton("btnRemoveTodosPJ", label = "", icon = icon("angle-double-left", lib = "font-awesome")),
-           actionButton("btnIncluiTodosPJ", label = "", icon = icon("angle-double-right", lib = "font-awesome"))
+           actionButton("btnIncluiTodosPJ", label = "Selecionar/Excluir Todos")
     )
   ),
   
@@ -41,11 +40,14 @@ shiny::tabPanel(
              choiceValues = "",
              width = '100%'
            )
+           
     ),
     column(width = 12, align="center",
-           actionButton("btnRemoveTodosPF", label = "", icon = icon("angle-double-left", lib = "font-awesome")),
-           actionButton("btnIncluiTodosPF", label = "", icon = icon("angle-double-right", lib = "font-awesome"))
+           actionButton("btnIncluiTodosPF", label = "Selecionar/Excluir Todos")
     )
+  ),
+  fluidRow(
+    tableOutput("all_nodes")
   ),
   
   hr()

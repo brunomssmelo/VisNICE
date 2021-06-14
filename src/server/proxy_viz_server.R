@@ -12,15 +12,15 @@ visNodesEdges <- reactive({
   graph_nodes <- igraph::as_data_frame(graph, what = 'vertices') %>% 
     rename(id = name)
   
-  vnodes <- graph_nodes %>%
-    filter(id %in% vnode_ids) %>%
-    unique()
-  
   vedges <- graph_edges %>%
     filter(from %in% vnode_ids | to %in% vnode_ids) %>%
     filter((as.Date(start) >= as.Date(filter_start_date())) &
-             (as.Date(end) <= as.Date(filter_end_date()) | end == '...') |
+             (as.Date(end) <= as.Date(filter_end_date()) | end == 'Tempo indefinido') |
              role != 'socio') %>%
+    unique()
+
+  vnodes <- graph_nodes %>%
+    filter((id %in% vedges$from) | (id %in% vedges$to)) %>%
     unique()
   
   updateSelectInput(session, 'selectFocusNode',
@@ -43,6 +43,11 @@ output$network_auto <- renderVisNetwork({
   }
   
   vis <- visNetwork(vnodes, vedges, main = title, submain = subtitle) %>% 
+    visGroups(useDefaultGroups = TRUE, groupname = "PJ", shape = "icon", 
+              icon = list(code = "f1ad", color = "orange")) %>%
+    visGroups(useDefaultGroups = TRUE, groupname = "PF", shape = "icon", 
+              icon = list(code = "f007")) %>%
+    addFontAwesome(name = "font-awesome-visNetwork") %>%
     visEdges(arrows = "to") %>% 
     visLegend(addEdges = dataos()$ledges, position = 'right') %>% 
     visOptions(manipulation = input$switchEditMode) %>% 
@@ -70,6 +75,11 @@ output$network_not_auto <- renderVisNetwork({
   })
   
   vis <- visNetwork(vnodes, vedges, main = title, submain = subtitle) %>% 
+    visGroups(useDefaultGroups = TRUE, groupname = "PJ", shape = "icon", 
+              icon = list(code = "f1ad", color = "orange")) %>%
+    visGroups(useDefaultGroups = TRUE, groupname = "PF", shape = "icon", 
+              icon = list(code = "f007")) %>%
+    addFontAwesome(name = "font-awesome-visNetwork") %>%
     visEdges(arrows = "to") %>% 
     visLegend(addEdges = dataos()$ledges, position = 'right') %>% 
     visOptions(manipulation = input$switchEditMode) %>% 
