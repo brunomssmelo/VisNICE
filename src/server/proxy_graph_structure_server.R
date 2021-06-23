@@ -98,7 +98,13 @@ output$btnDownload <- downloadHandler(
     write_xlsx(data, file)
   })
 
-output$all_nodes = renderTable({
-  vnodes <- visNodesEdges()$vnodes
-  vnodes
+#output$all_nodes = renderTable({
+  #vnodes <- visNodesEdges()$vnodes
+  #vnodes
+#})
+
+onRestored(function(state){
+  updateMultiInput(session, "multiSelectNodesPF", selected = state$input$multiSelectNodesPF)
+  updateMultiInput(session, "multiSelectNodesPJ", selected = state$input$multiSelectNodesPJ)
+  updateSelectInput(session, "selectFocusNode", selected = state$input$selectFocusNode)
 })
