@@ -25,6 +25,28 @@ visNodesEdges <- reactive({
   
   updateSelectInput(session, 'selectFocusNode',
                     choices = vnode_ids)
+
+  if(input$selectEdges == 2) {
+    vedges <- graph_edges %>%
+    filter(from %in% vnode_ids | to %in% vnode_ids) %>%
+    filter((as.Date(start) >= as.Date(filter_start_date())) &
+             (as.Date(end) <= as.Date(filter_end_date()) | end == 'Tempo indefinido')) %>%
+    unique()
+    
+    vnodes <- graph_nodes %>%
+      filter((id %in% vedges$from) | (id %in% vedges$to)) %>%
+      unique()
+  }
+  if(input$selectEdges == 3) {
+    vedges <- graph_edges %>%
+      filter(from %in% vnode_ids | to %in% vnode_ids) %>%
+      filter(type == 'parentesco') %>%
+      unique()
+    
+    vnodes <- graph_nodes %>%
+      filter((id %in% vedges$from) | (id %in% vedges$to)) %>%
+      unique()
+  }
   
   list(vnodes = vnodes, vedges = vedges)
 })
