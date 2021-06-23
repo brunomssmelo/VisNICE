@@ -14,7 +14,9 @@ require(dashboardthemes)
 #   )
 # )
 
-shiny::shinyUI(
+enableBookmarking(store = "server")
+
+shiny::shinyUI( function(){
   dashboardPage(
     dashboardHeader(
       title = "Visualizador de Relacionamentos",
@@ -44,6 +46,7 @@ shiny::shinyUI(
       selectInput("selectFocusNode", "Foco no nó :", choices = NULL, width = '100%'),
       sliderInput("sliderFocusScale", "Escala do foco : ",
                   min = 1, max = 4, value = 2, width = '100%'),
+      radioButtons("selectEdges", label = "Exibir Apenas:",choices = list("Todos" = 1, "Socios" = 2, "Parentes" = 3), selected = 1),
       
       column(
         width = 12,
@@ -82,12 +85,14 @@ shiny::shinyUI(
       shinyDashboardThemes(
         theme = "onenote"
       ),
-      useShinyjs(),
        # Acrescenta um icone de carregamento
+      fluidRow(column(width = 12, align="right",
+      bookmarkButton(label = "Salvar para depois"))),
+      br(),
       add_busy_spinner(spin = "fading-circle", color = "blue", timeout = 1000, position = "full-page"),
       source("./src/ui/proxy_viz_ui.R", local = TRUE, encoding = 'UTF-8')$value,
       source("./src/ui/proxy_data_source_ui.R", local = TRUE, encoding = 'UTF-8')$value,
       source("./src/ui/proxy_graph_structure_ui.R", local = TRUE, encoding = 'UTF-8')$value
     )
-  )
+  )}
 )
