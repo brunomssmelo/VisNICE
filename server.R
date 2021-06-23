@@ -6,6 +6,9 @@ require(fastDummies)
 require(igraph)
 require(shiny)
 require(shinyWidgets)
+require(dashboardthemes)
+require(shinyjs)
+require(shinybusy)
 require(visNetwork)
 
 # https://www.statsandr.com/blog/how-to-embed-a-shiny-app-in-blogdown/
