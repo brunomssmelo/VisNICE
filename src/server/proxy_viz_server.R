@@ -26,26 +26,43 @@ visNodesEdges <- reactive({
   updateSelectInput(session, 'selectFocusNode',
                     choices = vnode_ids)
 
-  if(input$selectEdges == 2) {
-    vedges <- graph_edges %>%
-    filter(from %in% vnode_ids | to %in% vnode_ids) %>%
-    filter((as.Date(start) >= as.Date(filter_start_date())) &
-             (as.Date(end) <= as.Date(filter_end_date()) | end == 'Tempo indefinido')) %>%
-    unique()
-    
-    vnodes <- graph_nodes %>%
-      filter((id %in% vedges$from) | (id %in% vedges$to)) %>%
-      unique()
+  if(!is.null(input$selectEdges)){
+    if("socio" %in% input$selectEdges){
+      vedges <- graph_edges %>%
+        filter(from %in% vnode_ids | to %in% vnode_ids) %>%
+        filter((as.Date(start) >= as.Date(filter_start_date())) &
+                 (as.Date(end) <= as.Date(filter_end_date()) | end == 'Tempo indefinido') |
+                 role == 'socio') %>%
+        unique()
+      
+      vnodes <- graph_nodes %>%
+        filter((id %in% vedges$from) | (id %in% vedges$to)) %>%
+        unique()
+    } else if("parentes" %in% input$selectEdges){
+      vedges <- graph_edges %>%
+        filter(from %in% vnode_ids | to %in% vnode_ids) %>%
+        filter(type == "parentesco") %>%
+        unique()
+      
+      vnodes <- graph_nodes %>%
+        filter((id %in% vedges$from) | (id %in% vedges$to)) %>%
+        unique()
+    }
   }
-  if(input$selectEdges == 3) {
+  
+  if(!is.null(input$op_parentes)){
+    updateCheckboxGroupInput(session, "selectEdges", selected = "parentes")
+    op_parentes <- input$op_parentes
+    
     vedges <- graph_edges %>%
       filter(from %in% vnode_ids | to %in% vnode_ids) %>%
-      filter(type == 'parentesco') %>%
+      filter(type == 'parentesco', role %in% op_parentes) %>%
       unique()
     
     vnodes <- graph_nodes %>%
       filter((id %in% vedges$from) | (id %in% vedges$to)) %>%
       unique()
+    
   }
   
   list(vnodes = vnodes, vedges = vedges)

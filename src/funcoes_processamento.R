@@ -42,7 +42,7 @@ load_xlsx_nice <- function(data_path){
     mutate(group = 'PF',
            role = 'socio') %>% 
     filter(!duplicated(id))
-  
+   
   v_socio_pj <- base_socios %>% 
     filter(nchar(NUM_CPF_CNPJ_SOCIO)==14) %>% 
     select(id = NUM_CPF_CNPJ_SOCIO, title = NOME_SOCIO, type = NIVEL) %>% 
@@ -109,6 +109,40 @@ load_xlsx_nice <- function(data_path){
     mutate(type = 'parentesco',
            role = tolower(role))
   
+  # Worksheet "17_Parente_Org_Publico" ############################################################################
+  
+  base_parente_Org_Publico <- read_excel(data_path,
+                                         sheet = "17_Parente_Org_Publico",
+                                         na = 'NULL',
+                                         col_types = c(rep("text",7), rep("guess", 3)))%>%
+    mutate(CO_CPF = str_pad(CO_CPF, pad = '0', side = 'left', width = 11),
+           CO_CNPJ_CEI = str_pad(CO_CNPJ_CEI, pad = '0', side = 'left', width = 14))
+  
+  v_empregado <- base_parente_Org_Publico %>%
+    filter(nchar(CO_CPF)==11) %>% 
+    select(id = CO_CPF, title = EMPREGADO) %>%
+    filter(!is.na(id)) %>%
+    mutate(group = 'PF',
+           role = 'empregado')%>%
+    filter(!duplicated(id))
+  
+  v_empregador <- base_parente_Org_Publico %>%
+    select(id = CO_CNPJ_CEI, title = EMPREGADOR) %>%
+    filter(!is.na(id)) %>%
+    mutate(group = 'PJ',
+           role = 'empregador')%>%
+    filter(!duplicated(id))
+  
+  a_parente_Org_Publico <- base_parente_Org_Publico %>%
+    select(from = CO_CPF,
+           to = CO_CNPJ_CEI,
+           start = DA_ADMISSAO_RAIS_DMA,
+           end = DA_DESLIGAMENTO_RAIS_DM)%>%
+    filter(!is.na(from)) %>%
+    filter(!is.na(to)) %>% 
+    mutate(role = 'parente_pub',
+           type = 'vinculo_emp')
+  
   ### dados consulta nice  ################################################################################
   
   list(
@@ -116,14 +150,18 @@ load_xlsx_nice <- function(data_path){
     ws_cnpj = base_cnpj,
     ws_socios = base_socios,
     ws_parentesco = base_parentesco,
+    ws_base_parente_Org_Publico = base_parente_Org_Publico,
     
     a_socio = a_socio,
     a_parente = a_parente,
+    a_parente_Org_Publico = a_parente_Org_Publico,
     
     v_parente = v_parente,
     v_empresa = v_empresa,
     v_socio_pj = v_socio_pj,
-    v_socio_pf = v_socio_pf
+    v_socio_pf = v_socio_pf,
+    v_empregado = v_empregado,
+    v_empregador = v_empregador
   )
   
 }

@@ -23,6 +23,17 @@ observe({
   updateMultiInput(session, "multiSelectNodesPF",
                    choices = choices_pf)
   
+  graph_edges <- igraph::as_data_frame(dataos()$graph, what = 'edges')
+  
+  edges_op <- graph_edges %>%
+    filter(type == 'parentesco') %>%
+    select(role) %>% unique()
+  
+  choices_op <- edges_op$role
+  
+  updateSelectizeInput(session, "op_parentes",
+                    choices = choices_op)
+  
   if(input$btnIncluiTodosPJ %%2 > 0){
     updateMultiInput(session, "multiSelectNodesPJ",
                       selected = choices_pj)
@@ -107,4 +118,5 @@ onRestored(function(state){
   updateMultiInput(session, "multiSelectNodesPF", selected = state$input$multiSelectNodesPF)
   updateMultiInput(session, "multiSelectNodesPJ", selected = state$input$multiSelectNodesPJ)
   updateSelectInput(session, "selectFocusNode", selected = state$input$selectFocusNode)
+  updateSelectizeInput(session, "op_parentes", selected = state$input$op_parentes)
 })

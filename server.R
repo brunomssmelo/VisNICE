@@ -28,7 +28,7 @@ source('./src/funcoes_grafos.R', encoding = "UTF-8")
 
 shinyServer(function(input, output, session){
   
-  sample_data_rds <- read_rds('./dados/sample_data.rds')
+  sample_data_rds <- read_rds('./dados/sample_data_Copia.rds')
   
   selected_nodes <- reactiveVal(NULL)
   ego_radius <- reactiveVal(1)

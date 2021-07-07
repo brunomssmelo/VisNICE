@@ -25,14 +25,19 @@ build_source_graph <- function(graph_data){
   v_socio_pj <- graph_data$v_socio_pj
   v_socio_pf <- graph_data$v_socio_pf
   v_parente <- graph_data$v_parente
+  v_empregado <- graph_data$v_empregado
+  v_empregador <- graph_data$v_empregador
   
   a_socio <- graph_data$a_socio
   a_parente <- graph_data$a_parente
+  a_parente_Org_Publico <- graph_data$a_parente_Org_Publico
   
   nodes <- v_empresa %>%
     bind_rows(v_socio_pj) %>%
     bind_rows(v_socio_pf) %>% 
     bind_rows(v_parente) %>%
+    bind_rows(v_empregado)%>%
+    bind_rows(v_empregador)%>%
     dummy_cols(select_columns = 'role') %>% 
     select(-role) %>% 
     group_by(id, title, group) %>%
@@ -51,6 +56,14 @@ build_source_graph <- function(graph_data){
            end = if_else(is.na(end), 'Tempo indefinido', end)) %>% 
     mutate(title = paste0("<p>", role, ":", start, " à ", end, "</p>"),
            color = 'blue')
+  
+  edges_parent <- a_parente_Org_Publico %>%
+    mutate(start = as.character(start),
+           end = as.character(end),
+           end = if_else(is.na(end), 'Tempo indefinido', end)) %>% 
+    mutate(title = paste0("<p>", role, ":", start, " à ", end, "</p>"),
+           color = 'purple') %>%
+    unique()
   
   edges <- a_parente %>%
     mutate(title = role,

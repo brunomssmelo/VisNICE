@@ -12,11 +12,14 @@ dataos <- reactive({
         graph_data <- list(
           a_socio = nice_data$a_socio,
           a_parente = nice_data$a_parente,
+          a_parente_Org_Publico = nice_data$a_parente_Org_Publico,
           
           v_parente = nice_data$v_parente,
           v_empresa = nice_data$v_empresa,
           v_socio_pj = nice_data$v_socio_pj,
-          v_socio_pf = nice_data$v_socio_pf
+          v_socio_pf = nice_data$v_socio_pf,
+          v_empregado = nice_data$v_empregado,
+          v_empregador = nice_data$v_empregador
         )
       },
       error = function(e) {
