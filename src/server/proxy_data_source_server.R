@@ -19,7 +19,8 @@ dataos <- reactive({
           v_socio_pj = nice_data$v_socio_pj,
           v_socio_pf = nice_data$v_socio_pf,
           v_empregado = nice_data$v_empregado,
-          v_empregador = nice_data$v_empregador
+          v_empregador = nice_data$v_empregador,
+          v_empresa_socio = nice_data$v_empresa_socio
         )
       },
       error = function(e) {

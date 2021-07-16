@@ -30,9 +30,7 @@ visNodesEdges <- reactive({
     if("socio" %in% input$selectEdges){
       vedges <- graph_edges %>%
         filter(from %in% vnode_ids | to %in% vnode_ids) %>%
-        filter((as.Date(start) >= as.Date(filter_start_date())) &
-                 (as.Date(end) <= as.Date(filter_end_date()) | end == 'Tempo indefinido') |
-                 role == 'socio') %>%
+        filter(type == "sociedade") %>%
         unique()
       
       vnodes <- graph_nodes %>%
@@ -42,6 +40,16 @@ visNodesEdges <- reactive({
       vedges <- graph_edges %>%
         filter(from %in% vnode_ids | to %in% vnode_ids) %>%
         filter(type == "parentesco") %>%
+        unique()
+      
+      vnodes <- graph_nodes %>%
+        filter((id %in% vedges$from) | (id %in% vedges$to)) %>%
+        unique()
+      
+    } else if("vinc_emp" %in% input$selectEdges){
+      vedges <- graph_edges %>%
+        filter(from %in% vnode_ids | to %in% vnode_ids) %>%
+        filter(type == "vinculo_emp") %>%
         unique()
       
       vnodes <- graph_nodes %>%

@@ -9,7 +9,8 @@ load_xlsx_nice <- function(data_path){
   # Worksheet "Listados" #################################################################################
   
   base_listados <- read_excel(data_path,
-                              sheet = "Listados")
+                              sheet = "Listados")%>%
+    mutate(NUM_CNPJ_CPF = str_pad(NUM_CNPJ_CPF, pad = '0', side = 'left', width = 14))
   
   # Worksheet "1_CNPJ" ###################################################################################
   
@@ -52,12 +53,22 @@ load_xlsx_nice <- function(data_path){
     filter(!duplicated(id))
   
   v_empresa <- base_listados %>% 
+    filter(nchar(NUM_CNPJ_CPF)==14) %>%  
     select(id = NUM_CNPJ_CPF, title = NOME, type = NIVEL) %>% 
     filter(!is.na(id)) %>% 
     mutate(group = 'PJ',
            role = 'empresa') %>% 
     arrange(type) %>% 
     filter(!duplicated(id))
+  
+  v_empresa_socio <- base_socios %>%
+    filter(nchar(NUM_CNPJ_EMPRESA)==14) %>%
+    select(id = NUM_CNPJ_EMPRESA, title = NOME_EMPRESA, type = NIVEL) %>%
+    filter(!is.na(id)) %>%
+    mutate(group = 'PJ',
+           role = 'empresa') %>%
+    filter(!duplicated(id))
+   
   
   a_socio <- base_socios %>% 
     select(from = NUM_CPF_CNPJ_SOCIO,
@@ -67,7 +78,8 @@ load_xlsx_nice <- function(data_path){
     filter(!is.na(from)) %>%
     filter(!is.na(to)) %>% 
     mutate(role = 'socio',
-           type = 'sociedade')
+           type = 'sociedade')%>%
+    unique()
   
   # grafo_vinculos_societarios <- graph_from_data_frame(d = a_vinculos_societarios, 
   #                                                     vertices = v_vinculos_societarios) 
