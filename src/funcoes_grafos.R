@@ -52,7 +52,7 @@ build_source_graph <- function(graph_data){
       role_empregador = sum(role_empregador) > 0
     ) %>%
     ungroup() %>%
-    filter(!duplicated(id)|n()==1)%>%
+    filter(!duplicated(id))%>%
     unique()
   
  #nodes2 <- nodes %>% aggregate(nodes$title ~ nodes$id, FUN = max)
