@@ -32,7 +32,7 @@ observe({
   choices_op <- edges_op$role
   
   updateSelectizeInput(session, "op_parentes",
-                    choices = choices_op)
+                    choices = sort(choices_op))
   
   if(input$btnIncluiTodosPJ %%2 > 0){
     updateMultiInput(session, "multiSelectNodesPJ",
@@ -53,6 +53,10 @@ observe({
     # atualiza filtro temporal
     filter_start_date(input$sldFiltroTemporal[1])
     filter_end_date(input$sldFiltroTemporal[2])
+    
+    # atualiza filtro temporal vinculo empregaticio
+    filter_start_date_serv(input$sldFiltroTemporalServ[1])
+    filter_end_date_serv(input$sldFiltroTemporalServ[2])
     
     # atualiza raio de vizinhanca
     ego_radius(input$sldRaioVizinhanca)

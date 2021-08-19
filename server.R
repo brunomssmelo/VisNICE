@@ -35,9 +35,13 @@ shinyServer(function(input, output, session){
   sample_data <- reactiveVal(sample_data_rds)
   is_sample_data <- reactiveVal(TRUE)
   filter_start_date <- reactiveVal(min(sample_data_rds$a_socio$start, na.rm = T)[1])
+  filter_start_date_serv <- reactiveVal(min(sample_data_rds$a_vinculo_servidor$start, na.rm = T)[1])
   filter_end_date <- reactiveVal(max(sample_data_rds$a_socio$end, na.rm = T)[1])
+  filter_end_date_serv <- reactiveVal(max(sample_data_rds$a_vinculo_servidor$end, na.rm = T)[1])
   data_start_date <- reactiveVal(min(sample_data_rds$a_socio$start, na.rm = T)[1])
+  data_start_date_serv <- reactiveVal(min(sample_data_rds$a_vinculo_servidor$start, na.rm = T)[1])
   data_end_date <- reactiveVal(max(sample_data_rds$a_socio$end, na.rm = T)[1])
+  data_end_date_serv <- reactiveVal(max(sample_data_rds$a_vinculo_servidor$end, na.rm = T)[1])
   
   source("./src/server/proxy_viz_server.R", local = TRUE, encoding = "UTF-8")
   source("./src/server/proxy_data_source_server.R", local = TRUE, encoding = "UTF-8")

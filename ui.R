@@ -33,12 +33,22 @@ shiny::shinyUI( function(){
       sliderInput("sldRaioVizinhanca", label = "Raio da vizinhança", min = 1, 
                   max = 4, value = 1, width = '100%'),
       
-      sliderInput("sldFiltroTemporal", label = "Filtro temporal",
+      sliderInput("sldFiltroTemporal", label = "Filtro temporal societario",
                   min = as.Date("2000-01-01"),
                   max = as.Date("2021-03-15"),
                   value = c(
                     as.Date("2000-01-01"),
                     as.Date("2021-03-15")
+                  ),
+                  width = '100%'
+      ),
+      
+      sliderInput("sldFiltroTemporalServ", label = "Filtro temporal de vinculo empregaticio",
+                  min = as.Date("2000-01-01"),
+                  max = as.Date("2021-08-19"),
+                  value = c(
+                    as.Date("2000-01-01"),
+                    as.Date("2021-08-19")
                   ),
                   width = '100%'
       ),

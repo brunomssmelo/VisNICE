@@ -123,36 +123,36 @@ load_xlsx_nice <- function(data_path){
   
   # Worksheet "17_Parente_Org_Publico" ############################################################################
   
-  base_parente_Org_Publico <- read_excel(data_path,
-                                         sheet = "17_Parente_Org_Publico",
-                                         na = 'NULL',
-                                         col_types = c(rep("text",7), rep("guess", 3)))%>%
-    mutate(CO_CPF = str_pad(CO_CPF, pad = '0', side = 'left', width = 11),
-           CO_CNPJ_CEI = str_pad(CO_CNPJ_CEI, pad = '0', side = 'left', width = 14))
-  
-  v_empregado <- base_parente_Org_Publico %>%
-    filter(nchar(CO_CPF)==11) %>% 
+  base_parente_org_publico <- read_excel(data_path,
+                                      sheet = "17_Parente_Org_Publico",
+                                       na = 'NULL',
+                                       col_types = c(rep("text",7), rep("guess", 3)))%>%
+  mutate(CO_CPF = str_pad(CO_CPF, pad = '0', side = 'left', width = 11),
+         CO_CNPJ_CEI = str_pad(CO_CNPJ_CEI, pad = '0', side = 'left', width = 14))
+
+  v_servidor <- base_parente_org_publico %>%
+    filter(nchar(CO_CPF)==11) %>%
     select(id = CO_CPF, title = EMPREGADO) %>%
     filter(!is.na(id)) %>%
     mutate(group = 'PF',
-           role = 'empregado')%>%
+           role = 'servidor')%>%
     filter(!duplicated(id))
-  
-  v_empregador <- base_parente_Org_Publico %>%
+
+  v_orgao_publico <- base_parente_org_publico %>%
     select(id = CO_CNPJ_CEI, title = EMPREGADOR) %>%
     filter(!is.na(id)) %>%
     mutate(group = 'PJ',
-           role = 'empregador')%>%
+           role = 'orgao_publico')%>%
     filter(!duplicated(id))
-  
-  a_parente_Org_Publico <- base_parente_Org_Publico %>%
+
+  a_vinculo_servidor <- base_parente_org_publico %>%
     select(from = CO_CPF,
            to = CO_CNPJ_CEI,
            start = DA_ADMISSAO_RAIS_DMA,
            end = DA_DESLIGAMENTO_RAIS_DM)%>%
     filter(!is.na(from)) %>%
-    filter(!is.na(to)) %>% 
-    mutate(role = 'parente_pub',
+    filter(!is.na(to)) %>%
+    mutate(role = 'servidor',
            type = 'vinculo_emp')
   
   ### dados consulta nice  ################################################################################
@@ -162,18 +162,19 @@ load_xlsx_nice <- function(data_path){
     ws_cnpj = base_cnpj,
     ws_socios = base_socios,
     ws_parentesco = base_parentesco,
-    ws_base_parente_Org_Publico = base_parente_Org_Publico,
+    ws_base_parente_org_publico = base_parente_org_publico,
     
     a_socio = a_socio,
     a_parente = a_parente,
-    a_parente_Org_Publico = a_parente_Org_Publico,
+    a_vinculo_servidor = a_vinculo_servidor,
     
     v_parente = v_parente,
     v_empresa = v_empresa,
+    v_empresa_socio = v_empresa_socio,
     v_socio_pj = v_socio_pj,
     v_socio_pf = v_socio_pf,
-    v_empregado = v_empregado,
-    v_empregador = v_empregador
+    v_servidor = v_servidor,
+    v_orgao_publico = v_orgao_publico
   )
   
 }

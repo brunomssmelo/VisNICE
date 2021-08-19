@@ -25,20 +25,20 @@ build_source_graph <- function(graph_data){
   v_socio_pj <- graph_data$v_socio_pj
   v_socio_pf <- graph_data$v_socio_pf
   v_parente <- graph_data$v_parente
-  v_empregado <- graph_data$v_empregado
-  v_empregador <- graph_data$v_empregador
+  v_servidor <- graph_data$v_servidor
+  v_orgao_publico <- graph_data$v_orgao_publico
   v_empresa_socio <- graph_data$v_empresa_socio
   
   a_socio <- graph_data$a_socio
   a_parente <- graph_data$a_parente
-  a_parente_Org_Publico <- graph_data$a_parente_Org_Publico
+  a_vinculo_servidor <- graph_data$a_vinculo_servidor
   
   nodes <- v_empresa %>%
     bind_rows(v_socio_pj) %>%
     bind_rows(v_socio_pf) %>% 
     bind_rows(v_parente) %>%
-    bind_rows(v_empregado)%>%
-    bind_rows(v_empregador)%>%
+    bind_rows(v_servidor)%>%
+    bind_rows(v_orgao_publico)%>%
     bind_rows(v_empresa_socio)%>%
     dummy_cols(select_columns = 'role') %>% 
     select(-role) %>% 
@@ -48,8 +48,8 @@ build_source_graph <- function(graph_data){
       role_parente = sum(role_parente) > 0,
       role_socio = sum(role_socio) > 0,
       role_empresa = sum(role_empresa) > 0,
-      role_empregado = sum(role_empregado) > 0,
-      role_empregador = sum(role_empregador) > 0
+      role_servidor = sum(role_servidor) > 0,
+      role_orgao_publico = sum(role_orgao_publico) > 0
     ) %>%
     ungroup() %>%
     filter(!duplicated(id))%>%
@@ -66,10 +66,10 @@ build_source_graph <- function(graph_data){
            color = 'blue') %>%
   unique()
   
-  edges_parent <- a_parente_Org_Publico %>%
+  edges_parent <- a_vinculo_servidor %>%
     mutate(start = as.character(start),
            end = as.character(end),
-           end = if_else(is.na(end), 'Tempo indefinido', end)) %>% 
+           end = if_else(is.na(end), 'Tempo indefinido', end)) %>%
     mutate(title = paste0("<p>", role, ":", start, " à ", end, "</p>"),
            color = 'purple') %>%
     unique()
@@ -88,7 +88,7 @@ build_source_graph <- function(graph_data){
   center_nodes <- filter(nodes, type == 0) %>% select(id) %>% unlist()
   
   ledges <- data.frame(color = c("blue", "red", "purple"),
-                       label = c("sócio", "parente", "vinc_emprego"), arrows =c("to", "to", "to"))
+                       label = c("sócio", "parente", "vinc_servidor"), arrows =c("to", "to", "to"))
   
   list(graph = graph, ledges = ledges, center_nodes = center_nodes)
 }

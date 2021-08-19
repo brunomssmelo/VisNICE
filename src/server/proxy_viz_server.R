@@ -17,6 +17,9 @@ visNodesEdges <- reactive({
     filter((as.Date(start) >= as.Date(filter_start_date())) &
              (as.Date(end) <= as.Date(filter_end_date()) | end == 'Tempo indefinido') |
              role != 'socio') %>%
+    filter((as.Date(start) >= as.Date(filter_start_date_serv())) &
+             (as.Date(end) <= as.Date(filter_end_date_serv()) | end == 'Tempo indefinido')|
+             role != 'servidor') %>%
     unique()
 
   vnodes <- graph_nodes %>%
@@ -30,6 +33,12 @@ visNodesEdges <- reactive({
     
     vedges <- graph_edges %>%
       filter(from %in% vnode_ids | to %in% vnode_ids) %>%
+      filter((as.Date(start) >= as.Date(filter_start_date())) &
+               (as.Date(end) <= as.Date(filter_end_date()) | end == 'Tempo indefinido')|
+               role != 'socio')%>%
+      filter((as.Date(start) >= as.Date(filter_start_date_serv())) &
+               (as.Date(end) <= as.Date(filter_end_date_serv()) | end == 'Tempo indefinido')|
+               role != 'servidor') %>%
       filter(type %in% input$selectEdges) %>%
       unique()
     
@@ -131,4 +140,10 @@ observe({
                     max = as.Date(data_end_date()),
                     value = c(as.Date(filter_start_date()),
                               as.Date(filter_end_date())))
+  
+   updateSliderInput(session, 'sldFiltroTemporalServ',
+                    min = as.Date(data_start_date_serv()),
+                    max = as.Date(data_end_date_serv()),
+                    value = c(as.Date(filter_start_date_serv()),
+                              as.Date(filter_end_date_serv())))
 })
