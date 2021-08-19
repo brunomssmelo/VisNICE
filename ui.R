@@ -100,7 +100,6 @@ shiny::shinyUI( function(){
       shinyDashboardThemes(
         theme = "onenote"
       ),
-
        # Acrescenta um icone de carregamento
       fluidRow(column(width = 12, align="right",
       bookmarkButton(label = "Salvar para depois"))),

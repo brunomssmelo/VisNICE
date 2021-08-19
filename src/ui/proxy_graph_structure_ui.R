@@ -46,7 +46,6 @@ shiny::tabPanel(
            actionButton("btnIncluiTodosPF", label = "Selecionar/Excluir Todos")
     )
   ),
-
   #fluidRow(
     #tableOutput("all_nodes")
   #),
