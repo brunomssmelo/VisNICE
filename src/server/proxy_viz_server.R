@@ -17,6 +17,9 @@ visNodesEdges <- reactive({
     filter((as.Date(start) >= as.Date(filter_start_date())) &
              (as.Date(end) <= as.Date(filter_end_date()) | end == 'Tempo indefinido') |
              role != 'socio') %>%
+    filter((as.Date(start) >= as.Date(filter_start_date_serv())) &
+             (as.Date(end) <= as.Date(filter_end_date_serv()) | end == 'Tempo indefinido')|
+             role != 'servidor') %>%
     unique()
 
   vnodes <- graph_nodes %>%
@@ -25,27 +28,38 @@ visNodesEdges <- reactive({
   
   updateSelectInput(session, 'selectFocusNode',
                     choices = vnode_ids)
-
-  if(input$selectEdges == 2) {
+  
+  if(!is.null(input$selectEdges)){
+    
     vedges <- graph_edges %>%
-    filter(from %in% vnode_ids | to %in% vnode_ids) %>%
-    filter((as.Date(start) >= as.Date(filter_start_date())) &
-             (as.Date(end) <= as.Date(filter_end_date()) | end == 'Tempo indefinido')) %>%
-    unique()
+      filter(from %in% vnode_ids | to %in% vnode_ids) %>%
+      filter((as.Date(start) >= as.Date(filter_start_date())) &
+               (as.Date(end) <= as.Date(filter_end_date()) | end == 'Tempo indefinido')|
+               role != 'socio')%>%
+      filter((as.Date(start) >= as.Date(filter_start_date_serv())) &
+               (as.Date(end) <= as.Date(filter_end_date_serv()) | end == 'Tempo indefinido')|
+               role != 'servidor') %>%
+      filter(type %in% input$selectEdges) %>%
+      unique()
     
     vnodes <- graph_nodes %>%
       filter((id %in% vedges$from) | (id %in% vedges$to)) %>%
       unique()
   }
-  if(input$selectEdges == 3) {
+  
+  if(!is.null(input$op_parentes)){
+    updateCheckboxGroupInput(session, "selectEdges", selected = "parentesco")
+    op_parentes <- input$op_parentes
+    
     vedges <- graph_edges %>%
       filter(from %in% vnode_ids | to %in% vnode_ids) %>%
-      filter(type == 'parentesco') %>%
+      filter(type == 'parentesco', role %in% op_parentes) %>%
       unique()
     
     vnodes <- graph_nodes %>%
       filter((id %in% vedges$from) | (id %in% vedges$to)) %>%
       unique()
+    
   }
   
   list(vnodes = vnodes, vedges = vedges)
@@ -126,4 +140,10 @@ observe({
                     max = as.Date(data_end_date()),
                     value = c(as.Date(filter_start_date()),
                               as.Date(filter_end_date())))
+  
+   updateSliderInput(session, 'sldFiltroTemporalServ',
+                    min = as.Date(data_start_date_serv()),
+                    max = as.Date(data_end_date_serv()),
+                    value = c(as.Date(filter_start_date_serv()),
+                              as.Date(filter_end_date_serv())))
 })

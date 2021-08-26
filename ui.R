@@ -33,7 +33,7 @@ shiny::shinyUI( function(){
       sliderInput("sldRaioVizinhanca", label = "Raio da vizinhança", min = 1, 
                   max = 4, value = 1, width = '100%'),
       
-      sliderInput("sldFiltroTemporal", label = "Filtro temporal",
+      sliderInput("sldFiltroTemporal", label = "Filtro temporal societario",
                   min = as.Date("2000-01-01"),
                   max = as.Date("2021-03-15"),
                   value = c(
@@ -43,10 +43,25 @@ shiny::shinyUI( function(){
                   width = '100%'
       ),
       
+      sliderInput("sldFiltroTemporalServ", label = "Filtro temporal de vinculo empregaticio",
+                  min = as.Date("2000-01-01"),
+                  max = as.Date("2021-08-19"),
+                  value = c(
+                    as.Date("2000-01-01"),
+                    as.Date("2021-08-19")
+                  ),
+                  width = '100%'
+      ),
+      
       selectInput("selectFocusNode", "Foco no nó :", choices = NULL, width = '100%'),
       sliderInput("sliderFocusScale", "Escala do foco : ",
                   min = 1, max = 4, value = 2, width = '100%'),
-      radioButtons("selectEdges", label = "Exibir Apenas:",choices = list("Todos" = 1, "Socios" = 2, "Parentes" = 3), selected = 1),
+      div(
+             #pickerInput("selectEdges", label = "Exibir Apenas:", choices = list("Socios" = "sociedade", "Parentes" = "parentesco", "Vinculo Empregaticio" = "vinculo_emp"), multiple = TRUE),
+             checkboxGroupInput("selectEdges", label = "Exibir Apenas:",choices = list("Socios" = "sociedade", "Parentes" = "parentesco", "Vinculo Empregaticio" = "vinculo_emp"), selected = c("sociedade", "parentesco", "vinculo_emp")),
+             selectizeInput("op_parentes", label = "Escolha um tipo de Relacionamento:", choices = NULL, multiple = TRUE, width = '100%')
+             ),
+      
       
       column(
         width = 12,

@@ -9,7 +9,8 @@ load_xlsx_nice <- function(data_path){
   # Worksheet "Listados" #################################################################################
   
   base_listados <- read_excel(data_path,
-                              sheet = "Listados")
+                              sheet = "Listados")%>%
+    mutate(NUM_CNPJ_CPF = str_pad(NUM_CNPJ_CPF, pad = '0', side = 'left', width = 14))
   
   # Worksheet "1_CNPJ" ###################################################################################
   
@@ -42,7 +43,7 @@ load_xlsx_nice <- function(data_path){
     mutate(group = 'PF',
            role = 'socio') %>% 
     filter(!duplicated(id))
-  
+   
   v_socio_pj <- base_socios %>% 
     filter(nchar(NUM_CPF_CNPJ_SOCIO)==14) %>% 
     select(id = NUM_CPF_CNPJ_SOCIO, title = NOME_SOCIO, type = NIVEL) %>% 
@@ -52,12 +53,22 @@ load_xlsx_nice <- function(data_path){
     filter(!duplicated(id))
   
   v_empresa <- base_listados %>% 
+    filter(nchar(NUM_CNPJ_CPF)==14) %>%  
     select(id = NUM_CNPJ_CPF, title = NOME, type = NIVEL) %>% 
     filter(!is.na(id)) %>% 
     mutate(group = 'PJ',
            role = 'empresa') %>% 
     arrange(type) %>% 
     filter(!duplicated(id))
+  
+  v_empresa_socio <- base_socios %>%
+    filter(nchar(NUM_CNPJ_EMPRESA)==14) %>%
+    select(id = NUM_CNPJ_EMPRESA, title = NOME_EMPRESA, type = NIVEL) %>%
+    filter(!is.na(id)) %>%
+    mutate(group = 'PJ',
+           role = 'empresa') %>%
+    filter(!duplicated(id))
+   
   
   a_socio <- base_socios %>% 
     select(from = NUM_CPF_CNPJ_SOCIO,
@@ -67,7 +78,8 @@ load_xlsx_nice <- function(data_path){
     filter(!is.na(from)) %>%
     filter(!is.na(to)) %>% 
     mutate(role = 'socio',
-           type = 'sociedade')
+           type = 'sociedade')%>%
+    unique()
   
   # grafo_vinculos_societarios <- graph_from_data_frame(d = a_vinculos_societarios, 
   #                                                     vertices = v_vinculos_societarios) 
@@ -109,6 +121,40 @@ load_xlsx_nice <- function(data_path){
     mutate(type = 'parentesco',
            role = tolower(role))
   
+  # Worksheet "17_Parente_Org_Publico" ############################################################################
+  
+  base_parente_org_publico <- read_excel(data_path,
+                                      sheet = "17_Parente_Org_Publico",
+                                       na = 'NULL',
+                                       col_types = c(rep("text",7), rep("guess", 3)))%>%
+  mutate(CO_CPF = str_pad(CO_CPF, pad = '0', side = 'left', width = 11),
+         CO_CNPJ_CEI = str_pad(CO_CNPJ_CEI, pad = '0', side = 'left', width = 14))
+
+  v_servidor <- base_parente_org_publico %>%
+    filter(nchar(CO_CPF)==11) %>%
+    select(id = CO_CPF, title = EMPREGADO) %>%
+    filter(!is.na(id)) %>%
+    mutate(group = 'PF',
+           role = 'servidor')%>%
+    filter(!duplicated(id))
+
+  v_orgao_publico <- base_parente_org_publico %>%
+    select(id = CO_CNPJ_CEI, title = EMPREGADOR) %>%
+    filter(!is.na(id)) %>%
+    mutate(group = 'PJ',
+           role = 'orgao_publico')%>%
+    filter(!duplicated(id))
+
+  a_vinculo_servidor <- base_parente_org_publico %>%
+    select(from = CO_CPF,
+           to = CO_CNPJ_CEI,
+           start = DA_ADMISSAO_RAIS_DMA,
+           end = DA_DESLIGAMENTO_RAIS_DM)%>%
+    filter(!is.na(from)) %>%
+    filter(!is.na(to)) %>%
+    mutate(role = 'servidor',
+           type = 'vinculo_emp')
+  
   ### dados consulta nice  ################################################################################
   
   list(
@@ -116,14 +162,19 @@ load_xlsx_nice <- function(data_path){
     ws_cnpj = base_cnpj,
     ws_socios = base_socios,
     ws_parentesco = base_parentesco,
+    ws_base_parente_org_publico = base_parente_org_publico,
     
     a_socio = a_socio,
     a_parente = a_parente,
+    a_vinculo_servidor = a_vinculo_servidor,
     
     v_parente = v_parente,
     v_empresa = v_empresa,
+    v_empresa_socio = v_empresa_socio,
     v_socio_pj = v_socio_pj,
-    v_socio_pf = v_socio_pf
+    v_socio_pf = v_socio_pf,
+    v_servidor = v_servidor,
+    v_orgao_publico = v_orgao_publico
   )
   
 }
