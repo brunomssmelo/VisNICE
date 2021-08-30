@@ -141,7 +141,7 @@ load_xlsx_nice <- function(data_path){
   v_orgao_publico <- base_parente_org_publico %>%
     select(id = CO_CNPJ_CEI, title = EMPREGADOR) %>%
     filter(!is.na(id)) %>%
-    mutate(group = 'PJ',
+    mutate(group = 'OP',
            role = 'orgao_publico')%>%
     filter(!duplicated(id))
 
@@ -155,6 +155,39 @@ load_xlsx_nice <- function(data_path){
     mutate(role = 'servidor',
            type = 'vinculo_emp')
   
+  # Worksheet "2_Telefones" ############################################################################
+  
+  base_telefones <- read_excel(data_path,
+                                         sheet = "2_Telefones",
+                                         na = 'NULL',
+                                         col_types = rep("text",6))%>%
+    mutate(NUM_CNPJ = str_pad(NUM_CNPJ, pad = '0', side = 'left', width = 14),
+           TELEFONE = str_pad(TELEFONE, pad = '0', side = "left", width = 10))
+
+  v_telefones <- base_telefones %>%
+    filter(nchar(TELEFONE)<=11) %>%
+    select(id = TELEFONE, title = TELEFONE) %>%
+    filter(!is.na(id)) %>%
+    mutate(group = 'TEL',
+           role = 'telefones')%>%
+    filter(!duplicated(id))
+
+  v_cnpj <- base_telefones %>%
+    filter(nchar(NUM_CNPJ)==14) %>%
+    select(id = NUM_CNPJ, title = NOME) %>%
+    filter(!is.na(id)) %>%
+    mutate(group = 'PJ',
+           role = 'empresa')%>%
+    filter(!duplicated(id))
+
+  a_tel_empresa <- base_telefones %>%
+    select(from = NUM_CNPJ,
+           to = TELEFONE)%>%
+    filter(!is.na(from)) %>%
+    filter(!is.na(to)) %>%
+    mutate(role = 'telefones',
+           type = 'telefone_empresa')
+  
   ### dados consulta nice  ################################################################################
   
   list(
@@ -163,10 +196,12 @@ load_xlsx_nice <- function(data_path){
     ws_socios = base_socios,
     ws_parentesco = base_parentesco,
     ws_base_parente_org_publico = base_parente_org_publico,
+    ws_base_telefones = base_telefones,
     
     a_socio = a_socio,
     a_parente = a_parente,
     a_vinculo_servidor = a_vinculo_servidor,
+    a_tel_empresa = a_tel_empresa,
     
     v_parente = v_parente,
     v_empresa = v_empresa,
@@ -174,7 +209,9 @@ load_xlsx_nice <- function(data_path){
     v_socio_pj = v_socio_pj,
     v_socio_pf = v_socio_pf,
     v_servidor = v_servidor,
-    v_orgao_publico = v_orgao_publico
+    v_orgao_publico = v_orgao_publico,
+    v_telefones = v_telefones,
+    v_cnpj = v_cnpj
   )
   
 }

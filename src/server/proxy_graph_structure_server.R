@@ -4,7 +4,7 @@ observe({
     rename(id = name)
   
   nodes_pj <- graph_nodes %>%
-    filter(group == 'PJ') %>%
+    filter(group == 'PJ'| group == 'OP') %>%
     select(id, title)
   
   choices_pj <- nodes_pj$id

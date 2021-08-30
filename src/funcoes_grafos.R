@@ -8,14 +8,14 @@ ego_graph_nodes <- function(graph, order, center_nodes){
   ego_graph <- make_ego_graph(graph, order = order,
                               nodes = center_nodes,
                               mode = "all")
-  
+  print(ego_graph)
   # first convert the list of igrpahs to list of data.frames
   ego_graph <- lapply(ego_graph, igraph::as_data_frame)
   # then combine all the data.frames in the list into one data.frame
   ego_graph <- do.call(rbind, ego_graph)
   # then make a graph out of the one combined data.frame
   ego_graph <- graph_from_data_frame(ego_graph)
-  
+
   unique(rownames(igraph::as_data_frame(ego_graph, what = 'vertices')))
 }
 
@@ -28,10 +28,13 @@ build_source_graph <- function(graph_data){
   v_servidor <- graph_data$v_servidor
   v_orgao_publico <- graph_data$v_orgao_publico
   v_empresa_socio <- graph_data$v_empresa_socio
+  v_telefones <- graph_data$v_telefones
+  v_cnpj <- graph_data$v_cnpj
   
   a_socio <- graph_data$a_socio
   a_parente <- graph_data$a_parente
   a_vinculo_servidor <- graph_data$a_vinculo_servidor
+  a_tel_empresa <- graph_data$a_tel_empresa
   
   nodes <- v_empresa %>%
     bind_rows(v_socio_pj) %>%
@@ -40,6 +43,8 @@ build_source_graph <- function(graph_data){
     bind_rows(v_servidor)%>%
     bind_rows(v_orgao_publico)%>%
     bind_rows(v_empresa_socio)%>%
+    bind_rows(v_telefones)%>%
+    bind_rows(v_cnpj)%>%
     dummy_cols(select_columns = 'role') %>% 
     select(-role) %>% 
     group_by(id, title, group) %>%
@@ -50,6 +55,7 @@ build_source_graph <- function(graph_data){
       role_empresa = sum(role_empresa) > 0,
       role_servidor = sum(role_servidor) > 0,
       role_orgao_publico = sum(role_orgao_publico) > 0
+      # role_telefones = sum(role_telefones) > 0
     ) %>%
     ungroup() %>%
     filter(!duplicated(id))%>%
@@ -74,10 +80,14 @@ build_source_graph <- function(graph_data){
            color = 'purple') %>%
     unique()
   
+  edges_tel <- a_tel_empresa %>%
+    mutate(color = '#E5C039')%>%
+    unique()
+
   edges <- a_parente %>%
     mutate(title = role,
            color = 'red') %>%
-    bind_rows(edges, edges_parent) %>%
+    bind_rows(edges, edges_parent, edges_tel) %>%
     unique()
   
   graph <- graph_from_data_frame(d = edges,
@@ -87,8 +97,8 @@ build_source_graph <- function(graph_data){
   # center_nodes <- filter(nodes, role_empresa) %>% select(id) %>% unlist()
   center_nodes <- filter(nodes, type == 0) %>% select(id) %>% unlist()
   
-  ledges <- data.frame(color = c("blue", "red", "purple"),
-                       label = c("sócio", "parente", "vinc_servidor"), arrows =c("to", "to", "to"))
+  ledges <- data.frame(color = c("blue", "red", "purple", "#E5C039"),
+                       label = c("sócio", "parente", "vinc_servidor", "telefones"), arrows =c("to", "to", "to", "to"))
   
   list(graph = graph, ledges = ledges, center_nodes = center_nodes)
 }

@@ -13,6 +13,7 @@ dataos <- reactive({
           a_socio = nice_data$a_socio,
           a_parente = nice_data$a_parente,
           a_vinculo_servidor = nice_data$a_vinculo_servidor,
+          a_tel_empresa = nice_data$a_tel_empresa,
           
           v_parente = nice_data$v_parente,
           v_empresa = nice_data$v_empresa,
@@ -20,7 +21,9 @@ dataos <- reactive({
           v_socio_pf = nice_data$v_socio_pf,
           v_servidor = nice_data$v_servidor,
           v_orgao_publico = nice_data$v_orgao_publico,
-          v_empresa_socio = nice_data$v_empresa_socio
+          v_empresa_socio = nice_data$v_empresa_socio,
+          v_telefones = nice_data$v_telefones,
+          v_cnpj = nice_data$v_cnpj
         )
       },
       error = function(e) {
