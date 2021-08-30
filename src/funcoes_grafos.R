@@ -8,7 +8,7 @@ ego_graph_nodes <- function(graph, order, center_nodes){
   ego_graph <- make_ego_graph(graph, order = order,
                               nodes = center_nodes,
                               mode = "all")
-  print(ego_graph)
+  # print(ego_graph)
   # first convert the list of igrpahs to list of data.frames
   ego_graph <- lapply(ego_graph, igraph::as_data_frame)
   # then combine all the data.frames in the list into one data.frame
