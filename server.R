@@ -28,20 +28,33 @@ source('./src/funcoes_grafos.R', encoding = "UTF-8")
 
 shinyServer(function(input, output, session){
   
-  sample_data_rds <- read_rds('./dados/sample_data_Copia.rds')
+  sample_data_rds <- read_rds('./dados/sample_data.rds')
   
   selected_nodes <- reactiveVal(NULL)
   ego_radius <- reactiveVal(1)
   sample_data <- reactiveVal(sample_data_rds)
   is_sample_data <- reactiveVal(TRUE)
-  filter_start_date <- reactiveVal(min(sample_data_rds$a_socio$start, na.rm = T)[1])
-  filter_start_date_serv <- reactiveVal(min(sample_data_rds$a_vinculo_servidor$start, na.rm = T)[1])
-  filter_end_date <- reactiveVal(max(sample_data_rds$a_socio$end, na.rm = T)[1])
-  filter_end_date_serv <- reactiveVal(max(sample_data_rds$a_vinculo_servidor$end, na.rm = T)[1])
-  data_start_date <- reactiveVal(min(sample_data_rds$a_socio$start, na.rm = T)[1])
-  data_start_date_serv <- reactiveVal(min(sample_data_rds$a_vinculo_servidor$start, na.rm = T)[1])
-  data_end_date <- reactiveVal(max(sample_data_rds$a_socio$end, na.rm = T)[1])
-  data_end_date_serv <- reactiveVal(max(sample_data_rds$a_vinculo_servidor$end, na.rm = T)[1])
+  
+  # As datas iniciais e finais do filtro de sócios coincidirão com as datas
+  # mínimas e máximas dos vínculos societários presentes em toda a base de dados
+  filter_start_date <- reactiveVal(get_role_min_date(sample_data_rds, 'socio'))
+  filter_end_date <- reactiveVal(get_role_max_date(sample_data_rds, 'socio'))
+  
+  # datas mínimas e máximas dos vínculos societários presentes em toda a base de
+  # dados
+  data_start_date <- reactiveVal(get_role_min_date(sample_data_rds, 'socio'))
+  data_end_date <- reactiveVal(get_role_max_date(sample_data_rds, 'socio'))
+  
+  # As datas iniciais e finais do filtro de servidores coincidirão com as datas
+  # mínimas e máximas dos vínculos empregatícios de servidores presentes em toda
+  # a base de dados
+  filter_start_date_serv <- reactiveVal(get_role_min_date(sample_data_rds, 'servidor'))
+  filter_end_date_serv <- reactiveVal(get_role_max_date(sample_data_rds, 'servidor'))
+  
+  # datas mínimas e máximas dos vínculos empregatícios de servidores presentes
+  # em toda a base de dados
+  data_start_date_serv <- reactiveVal(get_role_min_date(sample_data_rds, 'servidor'))
+  data_end_date_serv <- reactiveVal(get_role_max_date(sample_data_rds, 'servidor'))
   
   source("./src/server/proxy_viz_server.R", local = TRUE, encoding = "UTF-8")
   source("./src/server/proxy_data_source_server.R", local = TRUE, encoding = "UTF-8")
