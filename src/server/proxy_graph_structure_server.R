@@ -4,9 +4,9 @@ observe({
     rename(id = name)
   
   nodes_pj <- graph_nodes %>%
-    filter(group == 'PJ'| group == 'OP') %>%
+    filter(group != 'PF') %>% # <------- MUDAR AQUI (Contemplar separadamente PJ público e privado)
     select(id, title)
-  
+
   choices_pj <- nodes_pj$id
   names(choices_pj) <- paste0("[", nodes_pj$id,"]: ", nodes_pj$title)
   
@@ -50,14 +50,6 @@ observe({
     selected <- c(input$multiSelectNodesPJ,
                   input$multiSelectNodesPF)
     
-    # atualiza filtro temporal
-    filter_start_date(input$sldFiltroTemporal[1])
-    filter_end_date(input$sldFiltroTemporal[2])
-    
-    # atualiza filtro temporal vinculo empregaticio
-    filter_start_date_serv(input$sldFiltroTemporalServ[1])
-    filter_end_date_serv(input$sldFiltroTemporalServ[2])
-    
     # atualiza raio de vizinhanca
     ego_radius(input$sldRaioVizinhanca)
     
@@ -71,7 +63,7 @@ observeEvent(input$network_auto_graphChange, {
   vnodes <- visNodesEdges()$vnodes
   
   if(input$network_auto_graphChange$cmd == "addNode") {
-    cat("FUNCIONOU!!")
+    
     temp = bind_rows(
       vnodes,
       data.frame(id = input$network_auto_graphChange$id,
@@ -79,7 +71,7 @@ observeEvent(input$network_auto_graphChange, {
     )
     
     visNodesEdges()$vnodes = temp
-    cat("Fim do IF!")
+    
   }
 })
 
