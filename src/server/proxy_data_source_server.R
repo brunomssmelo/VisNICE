@@ -14,6 +14,9 @@ dataos <- reactive({
           a_parente = nice_data$a_parente,
           a_vinculo_servidor = nice_data$a_vinculo_servidor,
           a_tel_empresa = nice_data$a_tel_empresa,
+          a_socio_parentesco = nice_data$a_socio_parentesco,
+          a_vinculo_servidor_pub = nice_data$a_vinculo_servidor_pub,
+          a_vinculo_socio_servidor = nice_data$a_vinculo_socio_servidor,
           
           v_parente = nice_data$v_parente,
           v_empresa = nice_data$v_empresa,
@@ -23,7 +26,12 @@ dataos <- reactive({
           v_orgao_publico = nice_data$v_orgao_publico,
           v_empresa_socio = nice_data$v_empresa_socio,
           v_telefones = nice_data$v_telefones,
-          v_cnpj = nice_data$v_cnpj
+          v_cnpj = nice_data$v_cnpj,
+          v_socio_parentesco = nice_data$v_socio_parentesco,
+          v_servidor_pub = nice_data$v_servidor_pub,
+          v_org_publico = nice_data$v_org_publico,
+          v_socio_servidor = nice_data$v_socio_servidor,
+          v_socio_org_publico = nice_data$v_socio_org_publico
         )
       },
       error = function(e) {

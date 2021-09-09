@@ -111,15 +111,36 @@ load_xlsx_nice <- function(data_path){
     filter(!duplicated(id)) %>% 
     mutate(type = 1)
   
+  a_parente_r <- base_parentesco %>%
+    filter(RELACAO %in% c('SOGRO/SOGRA'))%>%
+    select(from = CPF1,
+           to = CPF2,
+           role = RELACAO)%>%
+    mutate(type = 'parentesco',
+           role = 'sogra')
+  
+  a_parente <- base_parentesco %>%
+    filter(RELACAO %in% c('AVÔ/AVÓ'))%>%
+    select(from = CPF1,
+           to = CPF2,
+           role = RELACAO)%>%
+    mutate(type = 'parentesco',
+           role = 'avó')
+  
   a_parente <- base_parentesco %>%
     filter(!is.na(CPF1)) %>% 
     filter(!is.na(CPF2)) %>% 
     filter(!(CPF1 == CPF2)) %>% 
+    filter(!(RELACAO %in% c('AVÔ/AVÓ')))%>%
+    filter(!(RELACAO %in% c('SOGRO/SOGRA')))%>%
     select(from = CPF1,
            to = CPF2,
            role = RELACAO) %>%
     mutate(type = 'parentesco',
-           role = tolower(role))
+           role = tolower(role))%>%
+    bind_rows(a_parente, a_parente_r)
+  
+  
   
   # Worksheet "17_Parente_Org_Publico" ############################################################################
   
@@ -188,6 +209,111 @@ load_xlsx_nice <- function(data_path){
     mutate(role = 'telefones',
            type = 'telefone_empresa')
   
+  # Worksheet "9_Socio_Parentesco" ############################################################################
+  
+  base_socio_parentesco <- read_excel(data_path,
+                                         sheet = "9_Socio_Parentesco",
+                                         na = 'NULL',
+                                         col_types = c(rep("text",5), rep("guess", 10)))%>%
+    mutate(CPF1 = str_pad(CPF1, pad = '0', side = 'left', width = 11),
+           CPF2 = str_pad(CPF2, pad = '0', side = 'left', width = 11),
+           NUM_CNPJ_EMPRESA1 = str_pad(NUM_CNPJ_EMPRESA1, pad = '0', side = 'left', width = 14),
+           NUM_CNPJ_EMPRESA2 = str_pad(NUM_CNPJ_EMPRESA2, pad = '0', side = 'left', width = 14))
+  
+  v_socio_parentesco <- base_socio_parentesco %>%
+    filter(nchar(CPF1) == 11) %>%
+    select(id = CPF1, title = NOME_CPF1) %>%
+    filter(!is.na(id)) %>%
+    mutate(group = 'PF',
+           role = 'socio')
+  
+  v_socio_parentesco <- base_socio_parentesco %>%
+    filter(nchar(CPF2) == 11) %>%
+    select(id = CPF2, title = NOME_CPF2) %>%
+    filter(!is.na(id)) %>%
+    mutate(group = 'PF',
+           role = 'socio') %>% 
+    bind_rows(v_socio_parentesco)%>%
+    filter(!duplicated(id))%>%
+    mutate(type = 1)
+  
+  a_socio_parentesco <- base_socio_parentesco %>%
+    filter(!is.na(CPF1)) %>% 
+    filter(!is.na(CPF2)) %>% 
+    select(from = CPF1,
+           to = CPF2,
+           role = RELACAO) %>%
+    mutate(type = 'parentesco',
+           role = tolower(role))
+  
+  # Worksheet "15_Func_Org_Publico" ############################################################################
+  
+  base_func_org_publico <- read_excel(data_path,
+                                      sheet = "15_Func_Org_Publico",
+                                      na = 'NULL',
+                                      col_types = c(rep("text",7), rep("guess", 3)))%>%
+    mutate(CO_CPF = str_pad(CO_CPF, pad = '0', side = 'left', width = 11),
+           CO_CNPJ_CEI = str_pad(CO_CNPJ_CEI, pad = '0', side = 'left', width = 14))
+
+  v_servidor_pub <- base_func_org_publico %>%
+    filter(nchar(CO_CPF)==11) %>%
+    select(id = CO_CPF, title = NO_PARTIC_RAIS) %>%
+    filter(!is.na(id)) %>%
+    mutate(group = 'PF',
+           role = 'servidor')%>%
+    filter(!duplicated(id))
+
+  v_org_publico <- base_func_org_publico %>%
+   select(id = CO_CNPJ_CEI, title = NOME_EMPRESA) %>%
+  filter(!is.na(id)) %>%
+    mutate(group = 'OP',
+           role = 'orgao_publico')%>%
+    filter(!duplicated(id))
+
+  a_vinculo_servidor_pub <- base_func_org_publico %>%
+    select(from = CO_CPF,
+           to = CO_CNPJ_CEI,
+           start = DA_ADMISSAO_RAIS_DMA,
+           end = DA_DESLIGAMENTO_RAIS_DM)%>%
+    filter(!is.na(from)) %>%
+    filter(!is.na(to)) %>%
+    mutate(role = 'servidor',
+           type = 'vinculo_emp')
+  
+  # Worksheet "16_Socios_Org_Publico" ############################################################################
+  
+  base_socios_org_publico <- read_excel(data_path,
+                                      sheet = "16_Socios_Org_Publico",
+                                      na = 'NULL',
+                                      col_types = c(rep("text",7), rep("guess", 3)))%>%
+    mutate(CO_CPF = str_pad(CO_CPF, pad = '0', side = 'left', width = 11),
+           CO_CNPJ_CEI = str_pad(CO_CNPJ_CEI, pad = '0', side = 'left', width = 14))
+
+  v_socio_servidor <- base_socios_org_publico %>%
+    filter(nchar(CO_CPF)==11) %>%
+    select(id = CO_CPF, title = EMPREGADO) %>%
+    filter(!is.na(id)) %>%
+    mutate(group = 'PF',
+           role = 'servidor')%>%
+    filter(!duplicated(id))
+
+  v_socio_org_publico <- base_socios_org_publico %>%
+    select(id = CO_CNPJ_CEI, title = EMPREGADOR) %>%
+    filter(!is.na(id)) %>%
+    mutate(group = 'OP',
+           role = 'orgao_publico')%>%
+    filter(!duplicated(id))
+
+  a_vinculo_socio_servidor <- base_socios_org_publico %>%
+    select(from = CO_CPF,
+           to = CO_CNPJ_CEI,
+           start = DA_ADMISSAO_RAIS_DMA,
+           end = DA_DESLIGAMENTO_RAIS_DM)%>%
+    filter(!is.na(from)) %>%
+    filter(!is.na(to)) %>%
+    mutate(role = 'servidor',
+           type = 'vinculo_emp')
+  
   ### dados consulta nice  ################################################################################
   
   list(
@@ -197,11 +323,17 @@ load_xlsx_nice <- function(data_path){
     ws_parentesco = base_parentesco,
     ws_base_parente_org_publico = base_parente_org_publico,
     ws_base_telefones = base_telefones,
+    ws_base_socio_parentesco = base_socio_parentesco,
+    ws_base_func_org_publico = base_func_org_publico,
+    ws_base_socios_org_publico = base_socios_org_publico,
     
     a_socio = a_socio,
     a_parente = a_parente,
     a_vinculo_servidor = a_vinculo_servidor,
     a_tel_empresa = a_tel_empresa,
+    a_socio_parentesco = a_socio_parentesco,
+    a_vinculo_servidor_pub = a_vinculo_servidor_pub,
+    a_vinculo_socio_servidor = a_vinculo_socio_servidor,
     
     v_parente = v_parente,
     v_empresa = v_empresa,
@@ -211,7 +343,12 @@ load_xlsx_nice <- function(data_path){
     v_servidor = v_servidor,
     v_orgao_publico = v_orgao_publico,
     v_telefones = v_telefones,
-    v_cnpj = v_cnpj
+    v_cnpj = v_cnpj,
+    v_socio_parentesco = v_socio_parentesco,
+    v_servidor_pub = v_servidor_pub,
+    v_org_publico = v_org_publico,
+    v_socio_servidor = v_socio_servidor,
+    v_socio_org_publico = v_socio_org_publico
   )
   
 }

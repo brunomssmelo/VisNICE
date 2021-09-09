@@ -121,6 +121,8 @@ output$network_not_auto <- renderVisNetwork({
               icon = list(code = "f007")) %>%
     visGroups(useDefaultGroups = TRUE, groupname = "OP", shape = "icon",
               icon = list(code = "f19c", color = "green"))%>%
+    visGroups(useDefaultGroups = TRUE, groupname = "TEL", shape = "icon",
+              icon = list(code = "f098", color = "black"))%>%
     addFontAwesome(name = "font-awesome-visNetwork") %>%
     visEdges(arrows = "to") %>% 
     visLegend(addEdges = dataos()$ledges, position = 'right') %>% 

@@ -30,11 +30,19 @@ build_source_graph <- function(graph_data){
   v_empresa_socio <- graph_data$v_empresa_socio
   v_telefones <- graph_data$v_telefones
   v_cnpj <- graph_data$v_cnpj
-  
+  v_socio_parentesco <- graph_data$v_socio_parentesco
+  v_servidor_pub <- graph_data$v_servidor_pub
+  v_org_publico <- graph_data$v_org_publico
+  v_socio_servidor <- graph_data$v_socio_servidor
+  v_socio_org_publico <- graph_data$v_socio_org_publico
+
   a_socio <- graph_data$a_socio
   a_parente <- graph_data$a_parente
   a_vinculo_servidor <- graph_data$a_vinculo_servidor
   a_tel_empresa <- graph_data$a_tel_empresa
+  a_socio_parentesco <- graph_data$a_socio_parentesco
+  a_vinculo_servidor_pub <- graph_data$a_vinculo_servidor_pub
+  a_vinculo_socio_servidor <- graph_data$a_vinculo_socio_servidor
   
   nodes <- v_empresa %>%
     bind_rows(v_socio_pj) %>%
@@ -45,6 +53,11 @@ build_source_graph <- function(graph_data){
     bind_rows(v_empresa_socio)%>%
     bind_rows(v_telefones)%>%
     bind_rows(v_cnpj)%>%
+    bind_rows(v_socio_parentesco)%>%
+    bind_rows(v_servidor_pub)%>%
+    bind_rows(v_org_publico)%>%
+    bind_rows(v_socio_servidor)%>%
+    bind_rows(v_socio_org_publico)%>%
     dummy_cols(select_columns = 'role') %>% 
     select(-role) %>% 
     group_by(id, title, group) %>%
@@ -68,7 +81,7 @@ build_source_graph <- function(graph_data){
     mutate(start = as.character(start),
            end = as.character(end),
            end = if_else(is.na(end), 'Tempo indefinido', end)) %>% 
-    mutate(title = paste0("<p>", role, ":", start, " à ", end, "</p>"),
+    mutate(title = paste0("<p>", role, ":", start, " À ", end, "</p>"),
            color = 'blue') %>%
   unique()
   
@@ -76,18 +89,39 @@ build_source_graph <- function(graph_data){
     mutate(start = as.character(start),
            end = as.character(end),
            end = if_else(is.na(end), 'Tempo indefinido', end)) %>%
-    mutate(title = paste0("<p>", role, ":", start, " à ", end, "</p>"),
+    mutate(title = paste0("<p>", role, ":", start, " À ", end, "</p>"),
+           color = 'purple') %>%
+    unique()
+  
+  edges_serv <- a_vinculo_servidor_pub %>%
+    mutate(start = as.character(start),
+           end = as.character(end),
+           end = if_else(is.na(end), 'Tempo indefinido', end)) %>%
+    mutate(title = paste0("<p>", role, ":", start, " À ", end, "</p>"),
+           color = 'purple') %>%
+    unique()
+  
+  edges_socio_serv <- a_vinculo_socio_servidor %>%
+    mutate(start = as.character(start),
+           end = as.character(end),
+           end = if_else(is.na(end), 'Tempo indefinido', end)) %>%
+    mutate(title = paste0("<p>", role, ":", start, " À ", end, "</p>"),
            color = 'purple') %>%
     unique()
   
   edges_tel <- a_tel_empresa %>%
     mutate(color = '#E5C039')%>%
     unique()
+  
+  edges_socio <- a_socio_parentesco %>%
+    mutate(title = role,
+           color = 'red')%>%
+  unique()
 
   edges <- a_parente %>%
     mutate(title = role,
            color = 'red') %>%
-    bind_rows(edges, edges_parent, edges_tel) %>%
+    bind_rows(edges, edges_parent, edges_tel, edges_socio, edges_serv, edges_socio_serv) %>%
     unique()
   
   graph <- graph_from_data_frame(d = edges,
