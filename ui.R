@@ -4,6 +4,7 @@ require(shinyWidgets)
 require(visNetwork)
 require(shinybusy)
 require(dashboardthemes)
+require(readr)
 
 # shiny::shinyUI(
 #   shiny::navbarPage(
@@ -57,8 +58,10 @@ shiny::shinyUI( function(){
       sliderInput("sliderFocusScale", "Escala do foco : ",
                   min = 1, max = 4, value = 2, width = '100%'),
       div(
-             #pickerInput("selectEdges", label = "Exibir Apenas:", choices = list("Socios" = "sociedade", "Parentes" = "parentesco", "Vinculo Empregaticio" = "vinculo_emp"), multiple = TRUE),
-             checkboxGroupInput("selectEdges", label = "Exibir Apenas:",choices = list("Socios" = "sociedade", "Parentes" = "parentesco", "Vinculo Empregaticio" = "vinculo_emp"), selected = c("sociedade", "parentesco", "vinculo_emp")),
+             #pickerInput("selectEdges", label = "Exibir Apenas:", choices = list("Socios" = "sociedade", "Parentes" = "parentesco", "Vinculo Empregaticio" = "vinculo_empregaticio"), multiple = TRUE),
+             checkboxGroupInput("selectEdges", label = "Exibir Apenas:",
+                                choices = list("Socios" = "sociedade", "Parentes" = "parentesco", "Vinculo Empregaticio" = "vinculo_empregaticio"),
+                                selected = c("sociedade", "parentesco", "vinculo_empregaticio")),
              selectizeInput("op_parentes", label = "Escolha um tipo de Relacionamento:", choices = NULL, multiple = TRUE, width = '100%')
              ),
       

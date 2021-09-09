@@ -1,0 +1,1 @@
+* 3_Socio --> pedir para o Gerson rever script para que traga corretamente os CNPJ do sócios do tipo PJ
