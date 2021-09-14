@@ -71,6 +71,7 @@ build_source_graph <- function(graph_data){
       type == 'sociedade' ~ 'blue',
       type == 'vinculo_empregaticio' ~ 'purple',
       type == 'parentesco' ~ 'red',
+      type == 'telefone_empresa' ~ 'E5C039',
       T ~ 'black'))
 
   graph <- graph_from_data_frame(d = edges,
@@ -85,8 +86,8 @@ build_source_graph <- function(graph_data){
   
   # center_nodes <- filter(nodes, type == 0) %>% select(id) %>% unlist() <---- Não
 
-  ledges <- data.frame(color = c("blue", "red", "purple"),
-                       label = c("sócio", "parente", "vinc_servidor"), arrows =c("to", "to", "to"))
+  ledges <- data.frame(color = c("blue", "red", "purple", "E5C039"),
+                       label = c("sócio", "parente", "vinc_servidor", "telefones"), arrows =c("to", "to", "to","to"))
   
   list(graph = graph, ledges = ledges, center_nodes = center_nodes)
 }

@@ -38,6 +38,7 @@ visNodesEdges <- reactive({
     vedges <- vedges %>%
       filter(type %in% input$selectEdges) %>%
       unique()
+    print(unique(vedges$type))
   }
   
   if(!is.null(input$op_parentes)){
@@ -54,7 +55,7 @@ visNodesEdges <- reactive({
     unique()
   
   updateSelectInput(session, 'selectFocusNode',
-                    choices = unique(vnodes$id))
+                    choices = sort(unique(vnodes$id)), selected = center_nodes[1])
   
   list(vnodes = vnodes, vedges = vedges)
 })
@@ -79,13 +80,11 @@ output$network_auto <- renderVisNetwork({
     # visPhysics(stabilization = FALSE) %>%
     # visEdges(smooth = FALSE) %>%
     visGroups(useDefaultGroups = TRUE, groupname = "PJ_PRIVADO", shape = "icon",
-              icon = list(code = "f1ad", color = "seagreen")) %>%
-    visGroups(useDefaultGroups = TRUE, groupname = "PJ_PUBLICO", shape = "icon",
               icon = list(code = "f1ad", color = "orange")) %>%
+    visGroups(useDefaultGroups = TRUE, groupname = "PJ_PUBLICO", shape = "icon",
+              icon = list(code = "f19c", color = "seagreen")) %>%
     visGroups(useDefaultGroups = TRUE, groupname = "PF", shape = "icon",
               icon = list(code = "f007")) %>%
-    visGroups(useDefaultGroups = TRUE, groupname = "OP", shape = "icon",
-              icon = list(code = "f19c", color = "green"))%>%
     visGroups(useDefaultGroups = TRUE, groupname = "TEL", shape = "icon",
               icon = list(code = "f098", color = "black"))%>%
     addFontAwesome(name = "font-awesome-visNetwork") %>%
@@ -120,13 +119,11 @@ output$network_not_auto <- renderVisNetwork({
     # visPhysics(stabilization = FALSE) %>%
     # visEdges(smooth = FALSE) %>%
     visGroups(useDefaultGroups = TRUE, groupname = "PJ_PRIVADO", shape = "icon",
-              icon = list(code = "f1ad", color = "seagreen")) %>%
-    visGroups(useDefaultGroups = TRUE, groupname = "PJ_PUBLICO", shape = "icon",
               icon = list(code = "f1ad", color = "orange")) %>%
+    visGroups(useDefaultGroups = TRUE, groupname = "PJ_PUBLICO", shape = "icon",
+              icon = list(code = "f19c", color = "seagreen")) %>%
     visGroups(useDefaultGroups = TRUE, groupname = "PF", shape = "icon",
               icon = list(code = "f007")) %>%
-    visGroups(useDefaultGroups = TRUE, groupname = "OP", shape = "icon",
-              icon = list(code = "f19c", color = "green"))%>%
     visGroups(useDefaultGroups = TRUE, groupname = "TEL", shape = "icon",
               icon = list(code = "f098", color = "black"))%>%
     addFontAwesome(name = "font-awesome-visNetwork") %>%

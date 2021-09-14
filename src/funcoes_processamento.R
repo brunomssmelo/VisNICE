@@ -94,15 +94,15 @@ load_xlsx_nice <- function(data_path){
     filter(!is.na(CPF1)) %>% 
     filter(!is.na(CPF2)) %>% 
     filter(!(CPF1 == CPF2)) %>% 
-    filter(!(RELACAO %in% c('AVÔ/AVÓ')))%>%
-    filter(!(RELACAO %in% c('SOGRO/SOGRA')))%>%
+    # filter(!(RELACAO %in% c('AVÔ/AVÓ')))%>%
+    # filter(!(RELACAO %in% c('SOGRO/SOGRA')))%>%
     select(from = CPF1,
            to = CPF2,
            start, end,
            role = RELACAO) %>%
     mutate(type = 'parentesco',
-           role = tolower(role))%>%
-    bind_rows(a_parente, a_parente_r)
+           role = tolower(role))
+    # bind_rows(a_parente, a_parente_r)
   
   
   
@@ -162,42 +162,190 @@ load_xlsx_nice <- function(data_path){
     mutate(type = 'vinculo_empregaticio') %>%
     filter(!is.na(from), !is.na(to))
   
+  vertices <- vertices %>%
+    bind_rows(v_servidor) %>% 
+    bind_rows(v_orgao_publico)
+  
   # Worksheet "2_Telefones" ############################################################################
   
-  base_telefones <- read_excel(data_path,
+  ws_telefones <- read_excel(data_path,
                                          sheet = "2_Telefones",
                                          na = 'NULL',
                                          col_types = rep("text",6))%>%
     mutate(NUM_CNPJ = str_pad(NUM_CNPJ, pad = '0', side = 'left', width = 14),
            TELEFONE = str_pad(TELEFONE, pad = '0', side = "left", width = 10))
 
-  v_telefones <- base_telefones %>%
+  v_telefones <- ws_telefones %>%
     filter(nchar(TELEFONE)<=11) %>%
     select(id = TELEFONE, title = TELEFONE) %>%
     filter(!is.na(id)) %>%
     mutate(group = 'TEL',
            role = 'telefones')%>%
-    filter(!duplicated(id))
+    filter(!duplicated(id))%>%
+    left_join(select(vertices, id, level), by='id')
 
-  v_cnpj <- base_telefones %>%
+  v_cnpj <- ws_telefones %>%
     filter(nchar(NUM_CNPJ)==14) %>%
     select(id = NUM_CNPJ, title = NOME) %>%
     filter(!is.na(id)) %>%
-    mutate(group = 'PJ',
+    mutate(group = 'PJ_PRIVADO',
            role = 'empresa')%>%
-    filter(!duplicated(id))
+    filter(!duplicated(id))%>%
+  left_join(select(vertices, id, level), by='id')
 
-  a_tel_empresa <- base_telefones %>%
+  a_tel_empresa <- ws_telefones %>%
+    mutate(start = NA, end = NA) %>% 
     select(from = NUM_CNPJ,
-           to = TELEFONE)%>%
+           to = TELEFONE,
+           start, end)%>%
     filter(!is.na(from)) %>%
     filter(!is.na(to)) %>%
     mutate(role = 'telefones',
            type = 'telefone_empresa')
   
   vertices <- vertices %>%
-    bind_rows(v_servidor) %>% 
-    bind_rows(v_orgao_publico)
+    bind_rows(v_telefones) %>% 
+    bind_rows(v_cnpj)
+  
+  # Worksheet "9_Socio_Parentesco" ############################################################################
+  
+  ws_socio_parentesco <- read_excel(data_path,
+                                      sheet = "9_Socio_Parentesco",
+                                      na = 'NULL',
+                                      col_types = c(rep("text",5), rep("guess", 10)))%>%
+    mutate(CPF1 = str_pad(CPF1, pad = '0', side = 'left', width = 11),
+           CPF2 = str_pad(CPF2, pad = '0', side = 'left', width = 11),
+           NUM_CNPJ_EMPRESA1 = str_pad(NUM_CNPJ_EMPRESA1, pad = '0', side = 'left', width = 14),
+           NUM_CNPJ_EMPRESA2 = str_pad(NUM_CNPJ_EMPRESA2, pad = '0', side = 'left', width = 14))
+
+  v_socio_parentesco <- ws_socio_parentesco %>%
+    filter(nchar(CPF1) == 11) %>%
+    select(id = CPF1, title = NOME_CPF1) %>%
+    filter(!is.na(id)) %>%
+    mutate(group = 'PF',
+           role = 'socio')
+
+  v_socio_parentesco <- ws_socio_parentesco %>%
+    filter(nchar(CPF2) == 11) %>%
+    select(id = CPF2, title = NOME_CPF2) %>%
+    filter(!is.na(id)) %>%
+    mutate(group = 'PF',
+           role = 'socio') %>%
+    bind_rows(v_socio_parentesco)%>%
+    filter(!duplicated(id))%>%
+    left_join(select(vertices, id, level), by='id')
+
+  a_socio_parentesco <- ws_socio_parentesco %>%
+    mutate(start = NA, end = NA) %>%
+    filter(!is.na(CPF1)) %>%
+    filter(!is.na(CPF2)) %>%
+    filter(!(CPF1 == CPF2)) %>% 
+    select(from = CPF1,
+           to = CPF2,
+           start,end,
+           role = RELACAO) %>%
+    mutate(type = 'parentesco',
+           role = tolower(role))
+  
+  vertices <- vertices %>%
+    bind_rows(v_socio_parentesco) %>% 
+    arrange(id) %>% 
+    filter(!duplicated(id))
+  
+  # Worksheet "15_Func_Org_Publico" ############################################################################
+  
+  ws_func_org_publico <- read_excel(data_path,
+                                      sheet = "15_Func_Org_Publico",
+                                      na = 'NULL',
+                                      col_types = c(rep("text",7), rep("guess", 3)))%>%
+    mutate(CO_CPF = str_pad(CO_CPF, pad = '0', side = 'left', width = 11),
+           CO_CNPJ_CEI = str_pad(CO_CNPJ_CEI, pad = '0', side = 'left', width = 14))%>%
+    mutate(TIPO_VINCULO = case_when(
+    str_detect(TIPO, pattern = 'não-efetivo') ~ 'servidor não efetivo',
+    str_detect(TIPO, pattern = 'regime jurídico único') ~ 'servidor efetivo',
+    str_detect(TIPO, pattern = 'indeterminado') ~ 'servidor contrato prazo indeterminado',
+    str_detect(TIPO, pattern = ' determinado') ~ 'servidor contrato prazo determinado',
+    str_detect(TIPO, pattern = 'temporário') ~ 'servidor contrato temporário',
+    str_detect(TIPO, pattern = 'Aprendiz') ~ 'aprendiz contratado',
+    T ~ 'servidor nomeado sem vínculo empregatício',
+  ))
+  
+  v_servidor_pub <- ws_func_org_publico %>%
+    filter(nchar(CO_CPF)==11) %>%
+    select(id = CO_CPF, title = NO_PARTIC_RAIS) %>%
+    filter(!is.na(id)) %>%
+    mutate(group = 'PF')%>%
+    filter(!duplicated(id)) %>%
+    left_join(select(vertices, id, level), by='id')
+  
+  v_org_publico <- ws_func_org_publico %>%
+    select(id = CO_CNPJ_CEI, title = NOME_EMPRESA) %>%
+    filter(!is.na(id)) %>%
+    mutate(group = 'PJ_PUBLICO')%>%
+    filter(!duplicated(id))%>%
+    left_join(select(vertices, id, level), by='id')
+  
+  a_vinculo_servidor_pub <- ws_func_org_publico %>%
+    select(from = CO_CPF,
+           to = CO_CNPJ_CEI,
+           start = DA_ADMISSAO_RAIS_DMA,
+           end = DA_DESLIGAMENTO_RAIS_DM,
+           role = TIPO_VINCULO)%>%
+    filter(!is.na(from)) %>%
+    filter(!is.na(to)) %>%
+    mutate(type = 'vinculo_empregaticio')%>%
+    filter(!is.na(from), !is.na(to))
+  
+  vertices <- vertices %>%
+    bind_rows(v_servidor_pub) %>%
+    bind_rows(v_org_publico)
+  
+  # Worksheet "16_Socios_Org_Publico" ############################################################################
+  
+  ws_socios_org_publico <- read_excel(data_path,
+                                        sheet = "16_Socios_Org_Publico",
+                                        na = 'NULL',
+                                        col_types = c(rep("text",7), rep("guess", 3)))%>%
+    mutate(CO_CPF = str_pad(CO_CPF, pad = '0', side = 'left', width = 11),
+           CO_CNPJ_CEI = str_pad(CO_CNPJ_CEI, pad = '0', side = 'left', width = 14))%>%
+  mutate(TIPO_VINCULO = case_when(
+    str_detect(TIPO, pattern = 'não-efetivo') ~ 'servidor não efetivo',
+    str_detect(TIPO, pattern = 'regime jurídico único') ~ 'servidor efetivo',
+    str_detect(TIPO, pattern = 'indeterminado') ~ 'servidor contrato prazo indeterminado',
+    str_detect(TIPO, pattern = ' determinado') ~ 'servidor contrato prazo determinado',
+    str_detect(TIPO, pattern = 'temporário') ~ 'servidor contrato temporário',
+    T ~ 'servidor nomeado sem vínculo empregatício',
+  ))
+
+  v_socio_servidor <- ws_socios_org_publico %>%
+    filter(nchar(CO_CPF)==11) %>%
+    select(id = CO_CPF, title = EMPREGADO) %>%
+    filter(!is.na(id)) %>%
+    mutate(group = 'PF')%>%
+    filter(!duplicated(id))%>%
+    left_join(select(vertices, id, level), by='id')
+
+  v_socio_org_publico <- ws_socios_org_publico %>%
+    select(id = CO_CNPJ_CEI, title = EMPREGADOR) %>%
+    filter(!is.na(id)) %>%
+    mutate(group = 'PJ_PUBLICO')%>%
+    filter(!duplicated(id))%>%
+    left_join(select(vertices, id, level), by='id')
+
+  a_vinculo_socio_servidor <- ws_socios_org_publico %>%
+    select(from = CO_CPF,
+           to = CO_CNPJ_CEI,
+           start = DA_ADMISSAO_RAIS_DMA,
+           end = DA_DESLIGAMENTO_RAIS_DM,
+           role = TIPO_VINCULO)%>%
+    filter(!is.na(from)) %>%
+    filter(!is.na(to)) %>%
+    mutate(type = 'vinculo_empregaticio')%>%
+    filter(!is.na(from), !is.na(to))
+
+  vertices <- vertices %>%
+    bind_rows(v_socio_servidor) %>%
+    bind_rows(v_socio_org_publico)
   
   # neste momento, podemos verificar se algum PJ inicialmente definido como privado era, na realidade
   # publico, e eliminar as diplicatas que estavam considerando-os como PJ provados:
@@ -212,6 +360,10 @@ load_xlsx_nice <- function(data_path){
   arestas <- a_socio %>% 
     bind_rows(a_parente) %>% 
     bind_rows(a_parente_servidor) %>% 
+    bind_rows(a_tel_empresa) %>%
+    bind_rows(a_socio_parentesco) %>%
+    bind_rows(a_vinculo_servidor_pub) %>%
+    bind_rows(a_vinculo_socio_servidor) %>%
     filter(from %in% vertices$id, to %in% vertices$id) %>% 
     unique()
   
