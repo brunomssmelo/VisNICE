@@ -77,11 +77,10 @@ observeEvent(input$network_auto_graphChange, {
 
 output$btnDownload <- downloadHandler(
   filename = function() { 
-    paste("dados_grafo_", Sys.time(), ".xlsx", sep="")
+    paste("dados_grafo_", Sys.Date(), ".xlsx", sep="")
   },
   content = function(file) {
     vnodes <- visNodesEdges()$vnodes %>% 
-      select(-type, -starts_with("role")) %>% 
       rename(nome = title,
              tipo = group)
     

@@ -92,6 +92,18 @@ shiny::shinyUI( function(){
       
       column(
         width = 12,
+        style = "color: #000",
+        align = "left",
+        materialSwitch(
+          inputId = "switchChoose",
+          label = "Mudar para dados do Banco SQL",
+          value = FALSE,
+          status = "primary",
+          width = '100%'
+        )),
+      
+      column(
+        width = 12,
         align = "left",
         offset = 0,
         downloadButton("btnDownload", "Baixar dados da visualização", width = '100%')

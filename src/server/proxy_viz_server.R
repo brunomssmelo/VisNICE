@@ -38,15 +38,13 @@ visNodesEdges <- reactive({
     vedges <- vedges %>%
       filter(type %in% input$selectEdges) %>%
       unique()
-    print(unique(vedges$type))
   }
   
   if(!is.null(input$op_parentes)){
-    updateCheckboxGroupInput(session, "selectEdges", selected = "parentesco")
     op_parentes <- input$op_parentes
     
     vedges <- vedges %>%
-      filter(type == 'parentesco', role %in% op_parentes) %>%
+      filter(role %in% op_parentes | type != 'parentesco') %>%
       unique()
   }
   
@@ -54,8 +52,11 @@ visNodesEdges <- reactive({
     filter((id %in% vedges$from) | (id %in% vedges$to)) %>%
     unique()
   
+  choices_nodes <- vnodes$id
+  names(choices_nodes) <- paste("[", vnodes$id, "]: ", vnodes$title)
+  
   updateSelectInput(session, 'selectFocusNode',
-                    choices = sort(unique(vnodes$id)), selected = center_nodes[1])
+                    choices = choices_nodes, selected = center_nodes[1])
   
   list(vnodes = vnodes, vedges = vedges)
 })

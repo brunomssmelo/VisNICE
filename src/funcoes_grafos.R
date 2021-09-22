@@ -9,7 +9,7 @@ get_role_max_date <- function(graph_data, edge_role){
 get_role_min_date <- function(graph_data, edge_role){
   graph_data$edges %>% 
     filter(str_detect(role, edge_role)) %>%
-    `$`(end) %>% min(na.rm = T)
+    `$`(start) %>% min(na.rm = T)
 }
 
 ego_graph <- function(graph, order, center_nodes){
