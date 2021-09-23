@@ -2,6 +2,18 @@ dataos <- reactive({
   
   if(is.null(input$data_file)){
     graph_data <- sample_data()
+    
+    if(input$switchChoose){
+      
+      nice_data <- load_connection_sql()
+      
+      is_sample_data(FALSE)
+      
+      graph_data <- list(
+        edges = nice_data$edges,
+        nodes = nice_data$nodes
+      )
+    }
   }else{
     tryCatch(
       {

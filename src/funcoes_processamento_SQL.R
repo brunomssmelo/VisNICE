@@ -1,3 +1,39 @@
+FixDataFrameEncoding <- function(df, destEnconding = "UTF-8") {
+  
+  library(stringi)
+  
+  numCols <- ncol(df)
+  df <- data.frame(df)
+  for (col in 1:numCols)
+  {
+    colClass <- class(df[, col])
+    
+    if(length(intersect(colClass,c('factor', 'character')))>0){
+      
+      sourceEncoding <- stri_enc_detect(paste(df[, col], collapse = " "))[[1]]$Encoding
+      sourceEncoding <- sourceEncoding[sourceEncoding %in% iconvlist()][1]
+      
+      needsConversion <- ifelse(!is.na(sourceEncoding), sourceEncoding != destEnconding, F)
+      
+      if("character" %in% colClass){
+        if(needsConversion){
+          df[, col] <- iconv(df[, col],
+                             from = sourceEncoding,
+                             to = destEnconding)
+        }
+      }
+      
+      if("factor" %in% colClass){
+        if(needsConversion){
+          levels(df[, col]) <- iconv(levels(df[, col]),
+                                     from = sourceEncoding,
+                                     to = destEnconding)
+        }
+      }
+    }
+  }
+  return(as.data.frame(df))}
+
 load_connection_sql <- function(){
   library(odbc)
   library(DBI)
@@ -203,11 +239,11 @@ WHERE A.CPF2 IN (SELECT A.NUM_CPF FROM DGI_CONSULTA.IMPORTADO.SOCIO A
 ORDER BY A.CPF1,
                 A.CPF2")
   
-  ## 17 - CPF - FUNCIONÁRIOS EMPREGADOS NA ADMINISTRAÇÃO PÚBLICA 
+  ## 17 - CPF - FUNCIONARIOS EMPREGADOS NA ADMINISTRACAO PUBLICA 
   
   #passagem da consulta 
   funcionariosNaAdmPublica_sql <- paste0("
-SELECT DISTINCT 'FUNCIONÁRIO ORG PUB' AS CONSULTA,
+SELECT DISTINCT 'FUNCIONÃRIO ORG PUB' AS CONSULTA,
   A.CO_CPF,
   B.NOME AS EMPREGADO,
   A.CO_CNPJ_CEI,
@@ -228,7 +264,7 @@ WHERE C.COD_NATUREZA_JURIDICA IN (1090, 1996, 2020, 1287, 1295, 1309, 1317, 1325
     FROM importado.EMPREGADOs A INNER JOIN importado.CD_CBO_OCUPACAO B
       ON A.CO_CBO_RAIS = B.CD_CBO_OCUPACAO LEFT JOIN importado.CNPJ C
       ON A.CO_CNPJ_CEI = C.NUM_CNPJ
-    WHERE A.CO_CNPJ_CEI IN (SELECT CNPJ FROM #CNPJ) AND B.TIPO = 'Ocupação'
+    WHERE A.CO_CNPJ_CEI IN (SELECT CNPJ FROM #CNPJ) AND B.TIPO = 'OcupaÃ§Ã£o'
     UNION
     SELECT B.NUM_CPF
     FROM importado.CAGED A INNER JOIN importado.CPF B
@@ -306,8 +342,272 @@ ORDER BY A.CO_CPF,
   
   # fecha a conex?o
   DBI::dbDisconnect(con)
+  parentesco <- FixDataFrameEncoding(parentesco)
   
-  list(cnpj = cnpj, telefones = telefones, socios = socios, parentesco = parentesco,
-       func_na_adm_publica = func_na_adm_publica, socio_org_publico = socio_org_publico)
+  # # tabela_cnpj ###################################################################################
+  cnpj <- cnpj%>% mutate(TEL1 = paste0(NUM_DDD1, NUM_TELEFONE1), TEL2 = paste0(NUM_DDD2, NUM_TELEFONE2),
+                         TEL1 = str_pad(TEL1, pad = '0', side = "left", width = 10),
+                         TEL2 = str_pad(TEL2, pad = '0', side = "left", width = 10))
+  
+  v_cnpj <- cnpj %>%
+    select(id = NUM_CNPJ, title = NOME) %>%
+    filter(nchar(id)==14, !duplicated(id)) %>%
+    mutate(group = 'PJ_PRIVADO')
+  
+  # v_telefones <- cnpj %>%
+  #   select(id = TEL1, title = TEL1) %>%
+  #   filter(nchar(id)<=11) %>%
+  #   filter(!is.na(id))
+  
+  v_telefones <- cnpj %>%
+    select(id = TEL1, title = TEL1) %>%
+    filter(nchar(id)<=11) %>%
+    filter(!is.na(id)) %>%
+    mutate(group = 'TEL',
+           role = 'telefones')%>%
+    filter(!duplicated(id))
+  
+  a_tel_cnpj <- cnpj %>%
+    mutate(start = NA, end = NA) %>%
+    select(from = NUM_CNPJ,
+           to = TEL1,
+           start, end)%>%
+    filter(!is.na(from)) %>%
+    filter(!is.na(to)) %>%
+    mutate(role = 'telefones',
+           type = 'telefone_empresa')
+  
+  
+  vertices <- v_cnpj %>%
+    bind_rows(v_telefones)
+  
+  # # telefones ###################################################################################
+  v_tel <- telefones %>%
+    filter(nchar(TELEFONE)<=11) %>%
+    select(id = TELEFONE, title = TELEFONE) %>%
+    filter(!is.na(id)) %>%
+    mutate(group = 'TEL',
+           role = 'telefones')%>%
+    filter(!duplicated(id))%>%
+    left_join(select(vertices, id), by='id')
+  
+  v_cnpj <- telefones %>%
+    filter(nchar(NUM_CNPJ)==14) %>%
+    select(id = NUM_CNPJ, title = NOME) %>%
+    filter(!is.na(id)) %>%
+    mutate(group = 'PJ_PRIVADO',
+           role = 'empresa')%>%
+    filter(!duplicated(id))%>%
+    left_join(select(vertices, id), by='id')
+  
+  a_tel_empresa <- telefones %>%
+    mutate(start = NA, end = NA) %>%
+    select(from = NUM_CNPJ,
+           to = TELEFONE,
+           start, end)%>%
+    filter(!is.na(from)) %>%
+    filter(!is.na(to)) %>%
+    mutate(role = 'telefones',
+           type = 'telefone_empresa')
+  
+  vertices <- vertices %>%
+    bind_rows(v_tel) %>%
+    bind_rows(v_cnpj)
+  
+  # # socios ###################################################################################
+  
+  socios <- socios %>% mutate(NUM_CNPJ_EMPRESA = str_pad(NUM_CNPJ_EMPRESA, pad = '0', side = 'left', width = 14)) %>% 
+    mutate(NUM_CPF = case_when(
+      nchar(NUM_CPF) > 11 ~ str_pad(NUM_CPF, pad = '0', side = 'left', width = 14),
+      T ~ str_pad(NUM_CPF, pad = '0', side = 'left', width = 11)))
+  
+  a_socio <- socios %>% 
+    select(from = NUM_CPF,
+           to = NUM_CNPJ_EMPRESA,
+           start = DATA_ENTRADA_SOCIEDADE,
+           end = DATA_DE_EXCLUSAO_NA_SOCIEDADE) %>% 
+    filter(!is.na(from)) %>%
+    filter(!is.na(to)) %>% 
+    mutate(role = 'socio',
+           type = 'sociedade')%>%
+    unique()
+  
+  v_socio_pf <- socios %>% 
+    select(id = NUM_CPF, title = NOME_SOCIO) %>% 
+    filter(nchar(id)==11) %>% 
+    mutate(group = 'PF') %>% 
+    inner_join(select(a_socio, from:to), by=c('id'='from')) %>% 
+    #  left_join(select(ws_listados, id, level), by=c('to'='id')) %>% 
+    select(-to) %>% 
+    filter(!duplicated(id))
+  
+  v_socio_pj <- socios %>% 
+    select(id = NUM_CPF, title = NOME_SOCIO) %>% 
+    #left_join(select(ws_listados, id, level), by='id') %>% 
+    filter(nchar(id)==14, !duplicated(id)) %>% 
+    mutate(group = 'PJ_PRIVADO')
+  
+  vertices <- vertices %>%
+    bind_rows(v_socio_pf) %>% 
+    bind_rows(v_socio_pj) %>% 
+    arrange(id) %>% 
+    filter(!duplicated(id))
+  
+  # # parentesco ###################################################################################
+  # Encoding(pessoaFisica$NOME_MAE) <- "latin1"
+  # 
+  # Encoding(PARENTESCO_RELACAO$RELACAO) <- "latin1"
+  # Encoding(PARENTESCO_RELACAO$FONTE) <- "latin1"
+  
+  parentesco <- parentesco %>% mutate(CPF1 = str_pad(CPF1, pad = '0', side = 'left', width = 11),
+                                      CPF2 = str_pad(CPF2, pad = '0', side = 'left', width = 11))
+  
+  a_parente <- parentesco %>%
+    mutate(start = NA, end = NA) %>%
+    filter(!is.na(CPF1)) %>%
+    filter(!is.na(CPF2)) %>%
+    filter(!(CPF1 == CPF2)) %>%
+    # filter(!(RELACAO %in% c('AVO/AVO')))%>%
+    # filter(!(RELACAO %in% c('SOGRO/SOGRA')))%>%
+    select(from = CPF1,
+           to = CPF2,
+           start, end,
+           role = RELACAO) %>%
+    mutate(type = 'parentesco',
+           role = tolower(role))
+  #bind_rows(a_parente, a_parente_r)
+  
+  v_parente <- parentesco %>%
+    select(id = CPF2, title = NOME2) %>%
+    filter(!is.na(id)) %>% 
+    mutate(group = 'PF')
+  
+  v_parente <- parentesco %>%
+    select(id = CPF1, title = NOME1) %>%
+    filter(!is.na(id)) %>% 
+    mutate(group = 'PF') %>%
+    bind_rows(v_parente) %>% 
+    filter(!duplicated(id)) %>% 
+    left_join(select(vertices, id), by='id')
+  
+  vertices <- vertices %>%
+    bind_rows(v_parente) %>% 
+    arrange(id) %>% 
+    filter(!duplicated(id))
+  
+  # # func_na_adm_publica ###################################################################################
+  func_na_adm_publica <- func_na_adm_publica %>%
+    mutate(CO_CPF = str_pad(CO_CPF, pad = '0', side = 'left', width = 11),
+           CO_CNPJ_CEI = str_pad(CO_CNPJ_CEI, pad = '0', side = 'left', width = 14))%>%
+    mutate(TIPO_VINCULO = case_when(
+      str_detect(TIPO, pattern = 'não-efetivo') ~ 'servidor não efetivo',
+      str_detect(TIPO, pattern = 'regime jurídico único') ~ 'servidor efetivo',
+      str_detect(TIPO, pattern = 'indeterminado') ~ 'servidor contrato prazo indeterminado',
+      str_detect(TIPO, pattern = ' determinado') ~ 'servidor contrato prazo determinado',
+      str_detect(TIPO, pattern = 'temporário') ~ 'servidor contrato temporário',
+      str_detect(TIPO, pattern = 'Aprendiz') ~ 'aprendiz contratado',
+      T ~ 'servidor nomeado sem vínculo empregatício',
+    ))
+  
+  v_servidor_pub <- func_na_adm_publica %>%
+    filter(nchar(CO_CPF)==11) %>%
+    select(id = CO_CPF, title = EMPREGADO) %>%
+    filter(!is.na(id)) %>%
+    mutate(group = 'PF')%>%
+    filter(!duplicated(id)) %>%
+    left_join(select(vertices, id), by='id')
+  
+  v_org_publico <- func_na_adm_publica %>%
+    select(id = CO_CNPJ_CEI, title = EMPREGADOR) %>%
+    filter(!is.na(id)) %>%
+    mutate(group = 'PJ_PUBLICO')%>%
+    filter(!duplicated(id))%>%
+    left_join(select(vertices, id), by='id')
+  
+  a_vinculo_servidor_pub <- func_na_adm_publica %>%
+    select(from = CO_CPF,
+           to = CO_CNPJ_CEI,
+           start = DA_ADMISSAO_RAIS_DMA,
+           end = DA_DESLIGAMENTO_RAIS_DM,
+           role = TIPO_VINCULO)%>%
+    filter(!is.na(from)) %>%
+    filter(!is.na(to)) %>%
+    mutate(type = 'vinculo_empregaticio')%>%
+    filter(!is.na(from), !is.na(to))
+  
+  vertices <- vertices %>%
+    bind_rows(v_servidor_pub) %>%
+    bind_rows(v_org_publico)
+  
+  
+  # # socio_org_publico ###################################################################################
+  socio_org_publico <- socio_org_publico %>%
+    mutate(CO_CPF = str_pad(CO_CPF, pad = '0', side = 'left', width = 11),
+           CO_CNPJ_CEI = str_pad(CO_CNPJ_CEI, pad = '0', side = 'left', width = 14))%>%
+    mutate(TIPO_VINCULO = case_when(
+      str_detect(TIPO, pattern = 'não-efetivo') ~ 'servidor não efetivo',
+      str_detect(TIPO, pattern = 'regime jurídico único') ~ 'servidor efetivo',
+      str_detect(TIPO, pattern = 'indeterminado') ~ 'servidor contrato prazo indeterminado',
+      str_detect(TIPO, pattern = ' determinado') ~ 'servidor contrato prazo determinado',
+      str_detect(TIPO, pattern = 'temporário') ~ 'servidor contrato temporário',
+      T ~ 'servidor nomeado sem vínculo empregatício',
+    ))
+  
+  v_socio_servidor <- socio_org_publico %>%
+    filter(nchar(CO_CPF)==11) %>%
+    select(id = CO_CPF, title = EMPREGADO) %>%
+    filter(!is.na(id)) %>%
+    mutate(group = 'PF')%>%
+    filter(!duplicated(id))%>%
+    left_join(select(vertices, id), by='id')
+  
+  v_socio_org_publico <- socio_org_publico %>%
+    select(id = CO_CNPJ_CEI, title = EMPREGADOR) %>%
+    filter(!is.na(id)) %>%
+    mutate(group = 'PJ_PUBLICO')%>%
+    filter(!duplicated(id))%>%
+    left_join(select(vertices, id), by='id')
+  
+  a_vinculo_socio_servidor <- socio_org_publico %>%
+    select(from = CO_CPF,
+           to = CO_CNPJ_CEI,
+           start = DA_ADMISSAO_RAIS_DMA,
+           end = DA_DESLIGAMENTO_RAIS_DM,
+           role = TIPO_VINCULO)%>%
+    filter(!is.na(from)) %>%
+    filter(!is.na(to)) %>%
+    mutate(type = 'vinculo_empregaticio')%>%
+    filter(!is.na(from), !is.na(to))
+  
+  vertices <- vertices %>%
+    bind_rows(v_socio_servidor) %>%
+    bind_rows(v_socio_org_publico)
+  
+  # neste momento, podemos verificar se algum PJ inicialmente definido como privado era, na realidade
+  # publico, e eliminar as diplicatas que estavam considerando-os como PJ provados:
+  vertices <- vertices %>% 
+    arrange(match(group, c('PF', 'PJ_PUBLICO', 'PJ_PRIVADO'))) %>% 
+    filter(!duplicated(id)) # <----- neste filtro prevalecerao os PJs publicos sobre os PJs privados
+  
+  # consolida as arestas e remove eventuais duplicatas e arestas quebradas
+  arestas <- a_socio %>% 
+    bind_rows(a_parente) %>% 
+    #bind_rows(a_parente_servidor) %>% 
+    bind_rows(a_tel_empresa) %>%
+    #bind_rows(a_socio_parentesco) %>%
+    bind_rows(a_vinculo_servidor_pub) %>%
+    bind_rows(a_vinculo_socio_servidor) %>%
+    filter(from %in% vertices$id, to %in% vertices$id) %>% 
+    unique()
+  
+  # remove eventuais vertices isolados
+  vertices <- vertices %>% 
+    filter(id %in% arestas$from | id %in% arestas$to)
+  
+  list(
+    edges = arestas,
+    
+    nodes = vertices
+  )
   
 }
