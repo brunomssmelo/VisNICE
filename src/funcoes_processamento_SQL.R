@@ -34,7 +34,7 @@ FixDataFrameEncoding <- function(df, destEnconding = "UTF-8") {
   }
   return(as.data.frame(df))}
 
-load_connection_sql <- function(){
+load_connection_sql <- function(cnpj){
   library(odbc)
   library(DBI)
   library(data.table)
@@ -53,11 +53,33 @@ load_connection_sql <- function(){
   ### criando a tabela tempor?ria #CNPJ_RAIZ
   dbExecute(con, "CREATE TABLE #CNPJ_RAIZ (CNPJ VARCHAR(20))", immediate = TRUE)
   
+  if(cnpj=="")
   dbExecute(con, "INSERT INTO #CNPJ_RAIZ VALUES ('09060537'),
                               ('02812740'),
                               ('25195543'),
                               ('07028841'),
                               ('05769219')")
+  print(cnpj)
+  if(cnpj!="" | str_detect(cnpj,";")){
+    cnpj<-str_squish(cnpj)
+    cnpj<-strsplit(cnpj,";")
+    cnpj<-unlist(cnpj)
+    
+    teste<- paste0("INSERT INTO #CNPJ_RAIZ VALUES ('",cnpj[1],"')")
+    
+    if(length(cnpj)>1){
+      for (i in 2:length(cnpj)){
+        teste<-paste0(teste,",('",cnpj[i],"')")
+      }
+    } 
+    
+    dbExecute(con, teste)
+    
+  }
+  
+  
+  #dbExecute(con, teste)
+  
   
   ### criando a tabela tempor?ria #CNPJ
   dbExecute(con,"CREATE TABLE #CNPJ (CNPJ VARCHAR(20))",immediate = TRUE)
@@ -243,7 +265,7 @@ ORDER BY A.CPF1,
   
   #passagem da consulta 
   funcionariosNaAdmPublica_sql <- paste0("
-SELECT DISTINCT 'FUNCIONÃRIO ORG PUB' AS CONSULTA,
+SELECT DISTINCT 'FUNCIONÁRIO ORG PUB' AS CONSULTA,
   A.CO_CPF,
   B.NOME AS EMPREGADO,
   A.CO_CNPJ_CEI,
@@ -264,7 +286,7 @@ WHERE C.COD_NATUREZA_JURIDICA IN (1090, 1996, 2020, 1287, 1295, 1309, 1317, 1325
     FROM importado.EMPREGADOs A INNER JOIN importado.CD_CBO_OCUPACAO B
       ON A.CO_CBO_RAIS = B.CD_CBO_OCUPACAO LEFT JOIN importado.CNPJ C
       ON A.CO_CNPJ_CEI = C.NUM_CNPJ
-    WHERE A.CO_CNPJ_CEI IN (SELECT CNPJ FROM #CNPJ) AND B.TIPO = 'OcupaÃ§Ã£o'
+    WHERE A.CO_CNPJ_CEI IN (SELECT CNPJ FROM #CNPJ) AND B.TIPO = 'Ocupação'
     UNION
     SELECT B.NUM_CPF
     FROM importado.CAGED A INNER JOIN importado.CPF B
@@ -332,6 +354,119 @@ ORDER BY A.CO_CPF,
 	A.DA_ADMISSAO_RAIS_DMA,
 	A.DA_DESLIGAMENTO_RAIS_DM")
   
+  ###   9 - CNPJ - RELACAO SOCIO-PARENTESCO
+  
+  SocioParentesco_sql<- paste0("
+      WITH
+        CONSULTA_SOCIO_PARENTE_RELACAO_PFPF AS (SELECT DISTINCT A.CPF1,
+            B.NOME AS NOME_CPF1,
+            C.NUM_CNPJ_EMPRESA AS NUM_CNPJ_EMPRESA1,
+            E.DESCR AS QUALIFICACAO1,
+            D.NOME AS NOME_EMPRESA1,
+            C.DATA_ENTRADA_SOCIEDADE AS DATA_ENTRADA_SOCIEDADE1,
+            C.DATA_DE_EXCLUSAO_NA_SOCIEDADE AS DATA_EXCLUSAO_SOCIEDADE1,
+            A.RELACAO,
+            A.CPF2
+            
+            FROM DGI_CONSULTA.IMPORTADO.RELACAO_PF_PF A INNER JOIN DGI_CONSULTA.IMPORTADO.CPF B
+              ON A.CPF1 = B.NUM_CPF INNER JOIN DGI_CONSULTA.IMPORTADO.SOCIO C
+              ON A.CPF1 = C.NUM_CPF INNER JOIN DGI_CONSULTA.IMPORTADO.CNPJ D
+              ON C.NUM_CNPJ_EMPRESA = D.NUM_CNPJ INNER JOIN DGI_CONSULTA.IMPORTADO.QUALIFICACAO_SOCIO_RESP_REPRES E
+              ON C.COD_QUALIFICACAO_SOCIO = E.COD
+                WHERE CPF1 IN (SELECT A.NUM_CPF FROM DGI_CONSULTA.IMPORTADO.SOCIO A
+                               WHERE A.NUM_CNPJ_EMPRESA IN (SELECT CNPJ FROM #CNPJ))
+
+            UNION
+
+              SELECT DISTINCT A.CPF1,
+                               B.NOME AS NOME_CPF1,
+                               C.NUM_CNPJ_EMPRESA AS NUM_CNPJ_EMPRESA1,
+                               E.DESCR AS QUALIFICACAO1,
+                               D.NOME AS NOME_EMPRESA1,
+                               C.DATA_ENTRADA_SOCIEDADE AS DATA_ENTRADA_SOCIEDADE1,
+                               C.DATA_DE_EXCLUSAO_NA_SOCIEDADE AS DATA_EXCLUSAO_SOCIEDADE1,
+                               A.RELACAO,
+                               A.CPF2
+
+            FROM DGI_CONSULTA.IMPORTADO.PARENTESCO_RELACAO_PF_PF A INNER JOIN DGI_CONSULTA.IMPORTADO.CPF B
+              ON A.CPF1 = B.NUM_CPF INNER JOIN DGI_CONSULTA.IMPORTADO.SOCIO C
+              ON A.CPF1 = C.NUM_CPF INNER JOIN DGI_CONSULTA.IMPORTADO.CNPJ D
+              ON C.NUM_CNPJ_EMPRESA = D.NUM_CNPJ INNER JOIN DGI_CONSULTA.IMPORTADO.QUALIFICACAO_SOCIO_RESP_REPRES E
+              ON C.COD_QUALIFICACAO_SOCIO = E.COD
+                WHERE CPF1 IN (SELECT A.NUM_CPF FROM DGI_CONSULTA.IMPORTADO.SOCIO A
+                               WHERE A.NUM_CNPJ_EMPRESA IN (SELECT CNPJ FROM #CNPJ))),
+
+
+        CONSULTA_SOCIO_PARENTE_PARENTESCO_RELACAO_PFPF AS (SELECT DISTINCT A.CPF1,
+            RELACAO,
+            A.CPF2,
+            B.NOME AS NOME_CPF2,
+            D.DESCR AS QUALIFICACAO2,
+            E.NUM_CNPJ AS NUM_CNPJ_EMPRESA2,
+            E.NOME AS NOME_EMPRESA2,
+            C.DATA_ENTRADA_SOCIEDADE AS DATA_ENTRADA_SOCIEDADE2,
+            C.DATA_DE_EXCLUSAO_NA_SOCIEDADE AS DATA_EXCLUSAO_SOCIEDADE2
+                FROM DGI_CONSULTA.IMPORTADO.RELACAO_PF_PF A INNER JOIN DGI_CONSULTA.IMPORTADO.CPF B
+                    ON A.CPF2 = B.NUM_CPF INNER JOIN DGI_CONSULTA.IMPORTADO.SOCIO C
+                    ON A.CPF2 = C.NUM_CPF INNER JOIN DGI_CONSULTA.IMPORTADO.QUALIFICACAO_SOCIO_RESP_REPRES D
+                    ON C.COD_QUALIFICACAO_SOCIO = D.COD LEFT JOIN DGI_CONSULTA.IMPORTADO.CNPJ E
+                    ON C.NUM_CNPJ_EMPRESA = E.NUM_CNPJ
+                WHERE CPF2 IN (SELECT A.NUM_CPF FROM DGI_CONSULTA.IMPORTADO.SOCIO A
+                               WHERE A.NUM_CNPJ_EMPRESA IN (SELECT CNPJ FROM #CNPJ))
+
+            UNION
+              SELECT DISTINCT A.CPF1,
+                               RELACAO,
+                               A.CPF2,
+                               B.NOME AS NOME_CPF2,
+                               D.DESCR AS QUALIFICACAO2,
+                               E.NUM_CNPJ AS NUM_CNPJ_EMPRESA2,
+                               E.NOME AS NOME_EMPRESA2,
+                               C.DATA_ENTRADA_SOCIEDADE AS DATA_ENTRADA_SOCIEDADE2,
+                               C.DATA_DE_EXCLUSAO_NA_SOCIEDADE AS DATA_EXCLUSAO_SOCIEDADE2
+
+                FROM DGI_CONSULTA.IMPORTADO.PARENTESCO_RELACAO_PF_PF A INNER JOIN DGI_CONSULTA.IMPORTADO.CPF B
+                               ON A.CPF2 = B.NUM_CPF INNER JOIN DGI_CONSULTA.IMPORTADO.SOCIO C
+                               ON A.CPF2 = C.NUM_CPF INNER JOIN DGI_CONSULTA.IMPORTADO.QUALIFICACAO_SOCIO_RESP_REPRES D
+                               ON C.COD_QUALIFICACAO_SOCIO = D.COD LEFT JOIN DGI_CONSULTA.IMPORTADO.CNPJ E
+                               ON C.NUM_CNPJ_EMPRESA = E.NUM_CNPJ
+                WHERE CPF2 IN (SELECT A.NUM_CPF FROM DGI_CONSULTA.IMPORTADO.SOCIO A
+                               WHERE A.NUM_CNPJ_EMPRESA IN (SELECT CNPJ FROM #CNPJ)))
+
+
+
+              SELECT DISTINCT 'SOCIO-PARENTESCO' AS CONSULTA,
+                               PR.CPF1,
+                               PR.NOME_CPF1,
+                               PR.QUALIFICACAO1,
+                               PR.NUM_CNPJ_EMPRESA1,
+                               PR.NOME_EMPRESA1,
+                               PR.DATA_ENTRADA_SOCIEDADE1,
+                               PR.DATA_EXCLUSAO_SOCIEDADE1,
+                               PR.CPF2,
+                               PR.RELACAO,
+                               PA.NOME_CPF2,
+                               PA.QUALIFICACAO2,
+                               PA.NUM_CNPJ_EMPRESA2,
+                               PA.NOME_EMPRESA2,
+                               PA.DATA_ENTRADA_SOCIEDADE2,
+                               PA.DATA_EXCLUSAO_SOCIEDADE2
+
+              FROM CONSULTA_SOCIO_PARENTE_RELACAO_PFPF PR INNER JOIN CONSULTA_SOCIO_PARENTE_PARENTESCO_RELACAO_PFPF PA
+                               ON PR.CPF1 = PA.CPF1 AND PR.CPF2 = PA.CPF2
+
+              WHERE PR.NUM_CNPJ_EMPRESA1 <> PA.NUM_CNPJ_EMPRESA2 AND
+                               PR.NUM_CNPJ_EMPRESA1 IN (SELECT CNPJ FROM #CNPJ) 
+                                  
+                                  AND
+                                  
+                               PA.NUM_CNPJ_EMPRESA2 IN (SELECT CNPJ FROM #CNPJ)
+
+              ORDER BY PR.NOME_CPF1,
+                               PR.NOME_EMPRESA1,
+                               NOME_CPF2,
+                               PA.NOME_EMPRESA2")
+  
   # executando a consulta
   cnpj<- dbGetQuery(con, cnpj_sql)
   telefones <- dbGetQuery(con, telefones_sql)
@@ -339,10 +474,12 @@ ORDER BY A.CO_CPF,
   parentesco <- dbGetQuery(con, parentesco_sql)
   func_na_adm_publica <- dbGetQuery(con, funcionariosNaAdmPublica_sql)
   socio_org_publico <- dbGetQuery(con, cpfSociosNaAdmPublica_sql)
+  #socio_parentesco <- dbGetQuery(con, SocioParentesco_sql)
   
   # fecha a conex?o
   DBI::dbDisconnect(con)
   parentesco <- FixDataFrameEncoding(parentesco)
+  #socio_parentesco <- FixDataFrameEncoding(socio_parentesco)
   
   # # tabela_cnpj ###################################################################################
   cnpj <- cnpj%>% mutate(TEL1 = paste0(NUM_DDD1, NUM_TELEFONE1), TEL2 = paste0(NUM_DDD2, NUM_TELEFONE2),
@@ -382,6 +519,35 @@ ORDER BY A.CO_CPF,
     bind_rows(v_telefones)
   
   # # telefones ###################################################################################
+  ### ordenando a tabela pelos telefones
+  ###  em ordem crescente para comparaÃ§Ã£o par a par posterior
+  #telefones<-telefones[order(telefones$TELEFONE)]
+  
+  # AlocaÃ§Ã£o na memÃ³ria do vetor da coluna de verificaÃ§Ã£o com o 
+  # mesmo tamanho das listas da tabela_telefones
+  # v<- rep(NA,length(telefones$TELEFONE))
+  # 
+  # 
+  # #  marca como iguais onde nÃºmeros de telefones iguais estÃ£o associados a duas
+  # # raizes de CNPJs diferentes
+  # # raiz do CNPJ = (substring)primeiros 8 digitos
+  # for (i in 2:length(telefones$TELEFONE)) {
+  #   
+  #   if(
+  #     (telefones$TELEFONE[i-1] == telefones$TELEFONE[i])
+  #     &
+  #     (substr(telefones$NUM_CNPJ[i-1],1 ,8)!= substr(telefones$NUM_CNPJ[i],1,8))
+  #   ){
+  #     v[i-1]<-"iguais"
+  #     v[i]<-"iguais"
+  #   }
+  # }
+  # 
+  # #passagem do vetor para lista que sera anexada ao final da tabela_telefones
+  # verificacao<- as.list(v)
+  # 
+  # telefones <- telefones%>% mutate(verificacao = verificacao)
+  
   v_tel <- telefones %>%
     filter(nchar(TELEFONE)<=11) %>%
     select(id = TELEFONE, title = TELEFONE) %>%
@@ -460,7 +626,24 @@ ORDER BY A.CO_CPF,
   # Encoding(PARENTESCO_RELACAO$FONTE) <- "latin1"
   
   parentesco <- parentesco %>% mutate(CPF1 = str_pad(CPF1, pad = '0', side = 'left', width = 11),
-                                      CPF2 = str_pad(CPF2, pad = '0', side = 'left', width = 11))
+                                      CPF2 = str_pad(CPF2, pad = '0', side = 'left', width = 11))%>%
+    mutate(RELACAO = case_when(
+      str_detect(RELACAO,'AVÓ')~'AVÓ/AVÔ',
+      str_detect(RELACAO,'AVÔ')~'AVÓ/AVÔ',
+      str_detect(RELACAO,'SOGRO')~'SOGRO/SOGRA',
+      str_detect(RELACAO,'SOGRA')~'SOGRO/SOGRA',
+      str_detect(RELACAO,'TIO')~'TIO/TIA',
+      str_detect(RELACAO,'TIA')~'TIO/TIA',
+      str_detect(RELACAO,'PAI')~'PAI/MÃE',
+      str_detect(RELACAO,'MÃE')~'PAI/MÃE',
+      str_detect(RELACAO,'IRMÃ')~'IRMÃ/IRMÃO',
+      str_detect(RELACAO,'IRMÃO')~'IRMÃ/IRMÃO',
+      str_detect(RELACAO,'CUNHADA')~'CUNHADA/CUNHADO',
+      str_detect(RELACAO,'CUNHADO')~'CUNHADA/CUNHADO',
+      str_detect(RELACAO,'PRIMA')~'PRIMA/PRIMO',
+      str_detect(RELACAO,'PRIMO')~'PRIMA/PRIMO',
+      T~RELACAO
+    ))
   
   a_parente <- parentesco %>%
     mutate(start = NA, end = NA) %>%
@@ -582,6 +765,48 @@ ORDER BY A.CO_CPF,
   vertices <- vertices %>%
     bind_rows(v_socio_servidor) %>%
     bind_rows(v_socio_org_publico)
+  
+  # Worksheet "9_Socio_Parentesco" ############################################################################
+  
+  # socio_parentesco <- socio_parentesco%>%
+  #   mutate(CPF1 = str_pad(CPF1, pad = '0', side = 'left', width = 11),
+  #          CPF2 = str_pad(CPF2, pad = '0', side = 'left', width = 11),
+  #          NUM_CNPJ_EMPRESA1 = str_pad(NUM_CNPJ_EMPRESA1, pad = '0', side = 'left', width = 14),
+  #          NUM_CNPJ_EMPRESA2 = str_pad(NUM_CNPJ_EMPRESA2, pad = '0', side = 'left', width = 14))
+  # 
+  # v_socio_parentesco <- socio_parentesco %>%
+  #   filter(nchar(CPF1) == 11) %>%
+  #   select(id = CPF1, title = NOME_CPF1) %>%
+  #   filter(!is.na(id)) %>%
+  #   mutate(group = 'PF',
+  #          role = 'socio')
+  # 
+  # v_socio_parentesco <- socio_parentesco %>%
+  #   filter(nchar(CPF2) == 11) %>%
+  #   select(id = CPF2, title = NOME_CPF2) %>%
+  #   filter(!is.na(id)) %>%
+  #   mutate(group = 'PF',
+  #          role = 'socio') %>%
+  #   bind_rows(v_socio_parentesco)%>%
+  #   filter(!duplicated(id))%>%
+  #   left_join(select(vertices, id), by='id')
+  # 
+  # a_socio_parentesco <- socio_parentesco %>%
+  #   mutate(start = NA, end = NA) %>%
+  #   filter(!is.na(CPF1)) %>%
+  #   filter(!is.na(CPF2)) %>%
+  #   filter(!(CPF1 == CPF2)) %>% 
+  #   select(from = CPF1,
+  #          to = CPF2,
+  #          start,end,
+  #          role = RELACAO) %>%
+  #   mutate(type = 'parentesco',
+  #          role = tolower(role))
+  # 
+  # vertices <- vertices %>%
+  #   bind_rows(v_socio_parentesco) %>% 
+  #   arrange(id) %>% 
+  #   filter(!duplicated(id))
   
   # neste momento, podemos verificar se algum PJ inicialmente definido como privado era, na realidade
   # publico, e eliminar as diplicatas que estavam considerando-os como PJ provados:

@@ -3,8 +3,12 @@ observe({
   graph_nodes <- igraph::as_data_frame(dataos()$graph, what = 'vertices') %>% 
     rename(id = name)
   
+  # nodes_pj <- graph_nodes %>%
+  #   filter(group != 'PF') %>% # <------- MUDAR AQUI (Contemplar separadamente PJ público e privado)
+  #   select(id, title)
+  
   nodes_pj <- graph_nodes %>%
-    filter(group != 'PF') %>% # <------- MUDAR AQUI (Contemplar separadamente PJ público e privado)
+    filter(str_detect(group, 'PJ')) %>%
     select(id, title)
 
   choices_pj <- nodes_pj$id

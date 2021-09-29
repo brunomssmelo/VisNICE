@@ -58,37 +58,41 @@ shiny::shinyUI( function(){
       sliderInput("sliderFocusScale", "Escala do foco : ",
                   min = 1, max = 4, value = 2, width = '100%'),
       div(
-             #pickerInput("selectEdges", label = "Exibir Apenas:", choices = list("Socios" = "sociedade", "Parentes" = "parentesco", "Vinculo Empregaticio" = "vinculo_empregaticio"), multiple = TRUE),
-             checkboxGroupInput("selectEdges", label = "Exibir Apenas:",
-                                choices = list("Socios" = "sociedade", "Parentes" = "parentesco", 
-                                               "Vinculo Empregaticio" = "vinculo_empregaticio", "Telefones" = "telefone_empresa"),
-                                selected = c("sociedade", "parentesco", "vinculo_empregaticio", "telefone_empresa")),
-             selectizeInput("op_parentes", label = "Escolha um tipo de Relacionamento:", choices = NULL, multiple = TRUE, width = '100%')
-             ),
-      
+        #pickerInput("selectEdges", label = "Exibir Apenas:", choices = list("Socios" = "sociedade", "Parentes" = "parentesco", "Vinculo Empregaticio" = "vinculo_empregaticio"), multiple = TRUE),
+        checkboxGroupInput("selectEdges", label = "Exibir Apenas:",
+                           choices = list("Socios" = "sociedade", "Parentes" = "parentesco", 
+                                          "Vinculo Empregaticio" = "vinculo_empregaticio", "Telefones" = "telefone_empresa"),
+                           selected = c("sociedade", "parentesco", "vinculo_empregaticio", "telefone_empresa")),
+        selectizeInput("op_parentes", label = "Escolha um tipo de Relacionamento:", choices = NULL, multiple = TRUE, width = '100%'),
+        textInput(
+          "text_cnpj", label = "Consulta cnpj:", width = '100%'
+        ),
+        actionButton("search_cnpj", "Buscar"),
+        tags$head(tags$style(type="text/css", "#search_cnpj {background-color:#428bca;color: #fff};"))
+      ),
       
       column(
         width = 12,
         style = "color: #000",
         materialSwitch(
-        inputId = "switchAutoRefresh",
-        label = "Ativar atualização automática", 
-        value = TRUE,
-        status = "primary",
-        width = '100%'
-      )) ,
+          inputId = "switchAutoRefresh",
+          label = "Ativar atualização automática", 
+          value = TRUE,
+          status = "primary",
+          width = '100%'
+        )) ,
       column(
         width = 12,
         style = "color: #000",
         align = "left",
         offset = 0,
         materialSwitch(
-        inputId = "switchEditMode",
-        label = "Ativar modo de edição",
-        value = FALSE,
-        status = "primary",
-        width = '100%',
-      )),
+          inputId = "switchEditMode",
+          label = "Ativar modo de edição",
+          value = FALSE,
+          status = "primary",
+          width = '100%',
+        )),
       
       column(
         width = 12,
@@ -97,7 +101,7 @@ shiny::shinyUI( function(){
         materialSwitch(
           inputId = "switchChoose",
           label = "Mudar para dados do Banco SQL",
-          value = FALSE,
+          value = TRUE,
           status = "primary",
           width = '100%'
         )),
@@ -107,18 +111,18 @@ shiny::shinyUI( function(){
         align = "left",
         offset = 0,
         downloadButton("btnDownload", "Baixar dados da visualização", width = '100%')
-        ),
+      ),
       tags$head(tags$style(type="text/css", "#btnDownload {background-color:#428bca;color: #fff};"),
                 tags$style(HTML(".span {color: black}"))
-                )
+      )
     ),
     dashboardBody(
       shinyDashboardThemes(
         theme = "onenote"
       ),
-       # Acrescenta um icone de carregamento
+      # Acrescenta um icone de carregamento
       fluidRow(column(width = 12, align="right",
-      bookmarkButton(label = "Salvar para depois"))),
+                      bookmarkButton(label = "Salvar para depois"))),
       br(),
       add_busy_spinner(spin = "fading-circle", color = "blue", timeout = 1000, position = "full-page"),
       source("./src/ui/proxy_viz_ui.R", local = TRUE, encoding = 'UTF-8')$value,
