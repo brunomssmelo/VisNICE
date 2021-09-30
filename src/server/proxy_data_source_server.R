@@ -2,6 +2,23 @@ dataos <- reactive({
   
   if(is.null(input$data_file)){
     graph_data <- sample_data()
+    
+    if(input$switchChoose){
+      
+      cnpj <- ""
+      
+      if(input$search_cnpj)
+        cnpj <- isolate(input$text_cnpj)
+      
+      nice_data <- load_connection_sql(cnpj)#passar como parametro o input de cnpjs
+      
+      is_sample_data(FALSE)
+      
+      graph_data <- list(
+        edges = nice_data$edges,
+        nodes = nice_data$nodes
+      )
+    }
   }else{
     tryCatch(
       {
@@ -20,7 +37,7 @@ dataos <- reactive({
       }
     )
   }
-
+  
   # atualiza filtro temporal de sócio
   data_start_date(get_role_min_date(graph_data, 'socio'))
   data_end_date(get_role_max_date(graph_data, 'socio'))
@@ -34,6 +51,6 @@ dataos <- reactive({
   
   filter_start_date_serv(data_start_date_serv)
   filter_end_date_serv(data_end_date_serv)
-
+  
   build_source_graph(graph_data)
 })

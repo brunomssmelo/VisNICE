@@ -14,6 +14,7 @@ require(visNetwork)
 # https://www.statsandr.com/blog/how-to-embed-a-shiny-app-in-blogdown/
 
 source('./src/funcoes_processamento.R', encoding = "UTF-8")
+source('./src/funcoes_processamento_SQL.R', encoding = "UTF-8")
 source('./src/funcoes_grafos.R', encoding = "UTF-8")
 
 # data <- load_xlsx_nice('./dados/CruzamentoDados_0762020_SCE.xlsx')

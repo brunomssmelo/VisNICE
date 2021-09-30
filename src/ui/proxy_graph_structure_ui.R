@@ -16,7 +16,7 @@ shiny::tabPanel(
     column(width = 12,
            multiInput(
              inputId = "multiSelectNodesPJ",
-             label = "Empresas:",
+             label = "Empresas/Orgaos Publicos:",
              choices = NULL,
              choiceNames = "",
              choiceValues = "",

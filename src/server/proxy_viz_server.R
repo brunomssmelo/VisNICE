@@ -41,11 +41,10 @@ visNodesEdges <- reactive({
   }
   
   if(!is.null(input$op_parentes)){
-    updateCheckboxGroupInput(session, "selectEdges", selected = "parentesco")
     op_parentes <- input$op_parentes
     
     vedges <- vedges %>%
-      filter(type == 'parentesco', role %in% op_parentes) %>%
+      filter(role %in% op_parentes | type != 'parentesco') %>%
       unique()
   }
   
@@ -53,8 +52,11 @@ visNodesEdges <- reactive({
     filter((id %in% vedges$from) | (id %in% vedges$to)) %>%
     unique()
   
+  choices_nodes <- vnodes$id
+  names(choices_nodes) <- paste("[", vnodes$id, "]: ", vnodes$title)
+  
   updateSelectInput(session, 'selectFocusNode',
-                    choices = unique(vnodes$id))
+                    choices = choices_nodes, selected = center_nodes[1])
   
   list(vnodes = vnodes, vedges = vedges)
 })
@@ -79,11 +81,13 @@ output$network_auto <- renderVisNetwork({
     # visPhysics(stabilization = FALSE) %>%
     # visEdges(smooth = FALSE) %>%
     visGroups(useDefaultGroups = TRUE, groupname = "PJ_PRIVADO", shape = "icon",
-              icon = list(code = "f1ad", color = "seagreen")) %>%
-    visGroups(useDefaultGroups = TRUE, groupname = "PJ_PUBLICO", shape = "icon",
               icon = list(code = "f1ad", color = "orange")) %>%
+    visGroups(useDefaultGroups = TRUE, groupname = "PJ_PUBLICO", shape = "icon",
+              icon = list(code = "f19c", color = "seagreen")) %>%
     visGroups(useDefaultGroups = TRUE, groupname = "PF", shape = "icon",
               icon = list(code = "f007")) %>%
+    visGroups(useDefaultGroups = TRUE, groupname = "TEL", shape = "icon",
+              icon = list(code = "f098", color = "black"))%>%
     addFontAwesome(name = "font-awesome-visNetwork") %>%
     visEdges(arrows = "to") %>%
     visLegend(addEdges = dataos()$ledges, position = 'right') %>%
@@ -116,11 +120,13 @@ output$network_not_auto <- renderVisNetwork({
     # visPhysics(stabilization = FALSE) %>%
     # visEdges(smooth = FALSE) %>%
     visGroups(useDefaultGroups = TRUE, groupname = "PJ_PRIVADO", shape = "icon",
-              icon = list(code = "f1ad", color = "seagreen")) %>%
-    visGroups(useDefaultGroups = TRUE, groupname = "PJ_PUBLICO", shape = "icon",
               icon = list(code = "f1ad", color = "orange")) %>%
+    visGroups(useDefaultGroups = TRUE, groupname = "PJ_PUBLICO", shape = "icon",
+              icon = list(code = "f19c", color = "seagreen")) %>%
     visGroups(useDefaultGroups = TRUE, groupname = "PF", shape = "icon",
               icon = list(code = "f007")) %>%
+    visGroups(useDefaultGroups = TRUE, groupname = "TEL", shape = "icon",
+              icon = list(code = "f098", color = "black"))%>%
     addFontAwesome(name = "font-awesome-visNetwork") %>%
     visEdges(arrows = "to") %>%
     visLegend(addEdges = dataos()$ledges, position = 'right') %>%

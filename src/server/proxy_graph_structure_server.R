@@ -3,8 +3,12 @@ observe({
   graph_nodes <- igraph::as_data_frame(dataos()$graph, what = 'vertices') %>% 
     rename(id = name)
   
+  # nodes_pj <- graph_nodes %>%
+  #   filter(group != 'PF') %>% # <------- MUDAR AQUI (Contemplar separadamente PJ público e privado)
+  #   select(id, title)
+  
   nodes_pj <- graph_nodes %>%
-    filter(group != 'PF') %>% # <------- MUDAR AQUI (Contemplar separadamente PJ público e privado)
+    filter(str_detect(group, 'PJ')) %>%
     select(id, title)
 
   choices_pj <- nodes_pj$id
@@ -77,11 +81,10 @@ observeEvent(input$network_auto_graphChange, {
 
 output$btnDownload <- downloadHandler(
   filename = function() { 
-    paste("dados_grafo_", Sys.time(), ".xlsx", sep="")
+    paste("dados_grafo_", Sys.Date(), ".xlsx", sep="")
   },
   content = function(file) {
     vnodes <- visNodesEdges()$vnodes %>% 
-      select(-type, -starts_with("role")) %>% 
       rename(nome = title,
              tipo = group)
     
