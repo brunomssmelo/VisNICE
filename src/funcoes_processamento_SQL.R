@@ -47,33 +47,36 @@ load_connection_sql <- function(cnpj){
                    Trusted_Connection = "True",
                    database ="DGI_CONSULTA" )
   
-  
   DBI::dbBegin(con)
   
   ### criando a tabela tempor?ria #CNPJ_RAIZ
   dbExecute(con, "CREATE TABLE #CNPJ_RAIZ (CNPJ VARCHAR(20))", immediate = TRUE)
   
   if(cnpj=="")
-  dbExecute(con, "INSERT INTO #CNPJ_RAIZ VALUES ('09060537'),
+    dbExecute(con, "INSERT INTO #CNPJ_RAIZ VALUES ('09060537'),
                               ('02812740'),
                               ('25195543'),
                               ('07028841'),
                               ('05769219')")
   print(cnpj)
+  selected_nodes<-NULL
   if(cnpj!="" | str_detect(cnpj,";")){
     cnpj<-str_squish(cnpj)
     cnpj<-strsplit(cnpj,";")
     cnpj<-unlist(cnpj)
     
-    teste<- paste0("INSERT INTO #CNPJ_RAIZ VALUES ('",cnpj[1],"')")
+    
+    script_cnpj<- paste0("INSERT INTO #CNPJ_RAIZ VALUES ('",cnpj[1],"')")
     
     if(length(cnpj)>1){
       for (i in 2:length(cnpj)){
-        teste<-paste0(teste,",('",cnpj[i],"')")
+        script_cnpj<-paste0(script_cnpj,",('",cnpj[i],"')")
       }
     } 
     
-    dbExecute(con, teste)
+    dbExecute(con, script_cnpj)
+    #selected_nodes <- dbGetQuery(con,"SELECT CNPJ FROM #CNPJ_RAIZ")
+    print(cnpj)
     
   }
   
@@ -325,7 +328,7 @@ SELECT * FROM #TEMP_SOCIO
 ORDER BY CPF_SOCIO
 ", immediate = TRUE)
   
-  # 18 - CPF - S?CIOS EMPREGADOS NA ADMINISTRA??O P?BLICA
+  # 18 - CPF - SÓCIOS EMPREGADOS NA ADMINISTRAÇÃO PÚBLICA
   
   #passagem da consulta
   
@@ -467,8 +470,9 @@ ORDER BY A.CO_CPF,
                                NOME_CPF2,
                                PA.NOME_EMPRESA2")
   
+  
   # executando a consulta
-  cnpj<- dbGetQuery(con, cnpj_sql)
+  cnpjs<- dbGetQuery(con, cnpj_sql)
   telefones <- dbGetQuery(con, telefones_sql)
   socios <- dbGetQuery(con, socio_sql)
   parentesco <- dbGetQuery(con, parentesco_sql)
@@ -477,26 +481,103 @@ ORDER BY A.CO_CPF,
   #socio_parentesco <- dbGetQuery(con, SocioParentesco_sql)
   
   # fecha a conex?o
-  DBI::dbDisconnect(con)
+  DBI::dbDisconnect(con) 
+  
+  con2 <- dbConnect(odbc(),
+                    Driver = "SQL Server",
+                    Server = "TCERJVM48",
+                    Trusted_Connection = "True",
+                    database ="IRIS_EMPENHO" )
+  
+  dbExecute(con2, "CREATE TABLE #CNPJ_RAIZ (CNPJ VARCHAR(20))", immediate = TRUE)
+  
+  if(cnpj==""){
+    dbExecute(con2, "INSERT INTO #CNPJ_RAIZ VALUES ('09060537'),
+                              ('02812740'),
+                              ('25195543'),
+                              ('07028841'),
+                              ('05769219')")}
+  # print(cnpj)
+  # selected_nodes<-NULL
+  if(cnpj!="" | str_detect(cnpj,";")){
+    cnpj<-str_squish(cnpj)
+    # cnpj<-strsplit(cnpj,";")
+    # cnpj<-unlist(cnpj)
+    
+    #Extrair de 8 em 8 caracteres a partir do ;
+    
+    script_empenho<- paste0("INSERT INTO #CNPJ_RAIZ VALUES ('",cnpj[1],"')")
+    
+    if(length(cnpj)>1){
+      for (i in 2:length(cnpj)){
+        script_empenho<-paste0(script_empenho,",('",cnpj[i],"')")
+      }
+    } 
+    
+    dbExecute(con2, script_empenho)
+    #selected_nodes <- dbGetQuery(con,"SELECT CNPJ FROM #CNPJ_RAIZ")
+    
+  }
+  
+  empenhos_sql<-"SELECT DISTINCT 'EMPENHOS' AS CONSULTA,
+  B.ENTE AS Ente,
+A.ID_UG AS IdUnidadeGestora,
+A.UNIDADE AS UnidadeGestora,
+B.NU_CGC AS CnpjUnidadeGestora,
+A.NU_EMPENHO AS NumeroEmpenho,
+A.TP_EMPENHO AS TipoEmpenho,
+A.DT_EMPENHO AS DataEmpenho,
+A.[VL EMPENHADO] AS ValorEmpenhado,
+A.ANULACAOEMPENHO AS ValorAnulacaoEmpenho,
+A.[VL LIQUIDADO] AS ValorLiquidado,
+A.[VALOR ANULACAO LIQUIDACAO] AS ValorAnulacaoLiquidacao,
+A.[VALOR SUBEMPENHO] AS ValorSubempenho,
+A.[VL PAGO] AS ValorPago,
+A.[VALOR RETENÇÃO] AS ValorRetencao,
+A.NU_LICITACAO AS NumeroLicitacao,
+A.HISTORICO AS HistoricoEmpenho,
+A.CREDOR AS Credor,
+A.CPF_CNPJ_CREDOR AS CpfCnpjCredor,
+A.ELEMENTOTCE AS ElementoDespesaTCE,
+A.DE_FONTE_TCE AS FonteRecursoTCE,
+A.NU_PROJ_ATIV As NumeroProjetoAtividade,
+A.DE_PROJATIV AS ProjetoAtividade,
+A.FUNCAO AS Funcao,
+A.SUBFUNCAO AS Subfuncao,
+A.DE_PROGRAMA AS ProgramaTrabalho
+FROM IRISEMPENHOMUNICIPIO AS A LEFT JOIN IRISUNIDADEGESTORA AS B
+ON A.ID_UG = B.CD_UNIDADE JOIN #CNPJ_RAIZ AS C ON CPF_CNPJ_CREDOR like CONCAT(C.CNPJ,'%')"
+  
+  # executando a consulta
+  empenhos<-dbGetQuery(con2,empenhos_sql)
+  
+  # fecha a conex?o
+  DBI::dbDisconnect(con2) 
+  
+  #Consertando as acentuacoes
   parentesco <- FixDataFrameEncoding(parentesco)
+  empenhos <- FixDataFrameEncoding(empenhos)
+  socio_org_publico <- FixDataFrameEncoding(socio_org_publico)
+  cnpjs<- FixDataFrameEncoding(cnpjs)
+  func_na_adm_publica<- FixDataFrameEncoding(func_na_adm_publica)
   #socio_parentesco <- FixDataFrameEncoding(socio_parentesco)
   
   # # tabela_cnpj ###################################################################################
-  cnpj <- cnpj%>% mutate(TEL1 = paste0(NUM_DDD1, NUM_TELEFONE1), TEL2 = paste0(NUM_DDD2, NUM_TELEFONE2),
-                         TEL1 = str_pad(TEL1, pad = '0', side = "left", width = 10),
-                         TEL2 = str_pad(TEL2, pad = '0', side = "left", width = 10))
+  cnpjs <- cnpjs%>% mutate(TEL1 = paste0(NUM_DDD1, NUM_TELEFONE1), TEL2 = paste0(NUM_DDD2, NUM_TELEFONE2),
+                           TEL1 = str_pad(TEL1, pad = '0', side = "left", width = 10),
+                           TEL2 = str_pad(TEL2, pad = '0', side = "left", width = 10))
   
-  v_cnpj <- cnpj %>%
+  v_cnpj <- cnpjs %>%
     select(id = NUM_CNPJ, title = NOME) %>%
     filter(nchar(id)==14, !duplicated(id)) %>%
-    mutate(group = 'PJ_PRIVADO')
+    mutate(group = 'PJ')
   
   # v_telefones <- cnpj %>%
   #   select(id = TEL1, title = TEL1) %>%
   #   filter(nchar(id)<=11) %>%
   #   filter(!is.na(id))
   
-  v_telefones <- cnpj %>%
+  v_telefones <- cnpjs %>%
     select(id = TEL1, title = TEL1) %>%
     filter(nchar(id)<=11) %>%
     filter(!is.na(id)) %>%
@@ -504,7 +585,7 @@ ORDER BY A.CO_CPF,
            role = 'telefones')%>%
     filter(!duplicated(id))
   
-  a_tel_cnpj <- cnpj %>%
+  a_tel_cnpj <- cnpjs %>%
     mutate(start = NA, end = NA) %>%
     select(from = NUM_CNPJ,
            to = TEL1,
@@ -629,7 +710,7 @@ ORDER BY A.CO_CPF,
                                       CPF2 = str_pad(CPF2, pad = '0', side = 'left', width = 11))%>%
     mutate(RELACAO = case_when(
       str_detect(RELACAO,'AVÓ')~'AVÓ/AVÔ',
-      str_detect(RELACAO,'AVÔ')~'AVÓ/AVÔ',
+      str_detect(RELACAO,'AVÕ')~'AVÓ/AVÔ',
       str_detect(RELACAO,'SOGRO')~'SOGRO/SOGRA',
       str_detect(RELACAO,'SOGRA')~'SOGRO/SOGRA',
       str_detect(RELACAO,'TIO')~'TIO/TIA',
@@ -766,6 +847,45 @@ ORDER BY A.CO_CPF,
     bind_rows(v_socio_servidor) %>%
     bind_rows(v_socio_org_publico)
   
+  # # tabela_empenhos ###################################################################################
+  # company_name_to_id <- empenhos$CnpjUnidadeGestora %>%
+  #   `names<-`(empenhos$UnidadeGestora)
+  
+  empenhos <- empenhos %>% mutate(CpfCnpjCredor= str_pad(CpfCnpjCredor, pad = '0', side = 'left', width = 14))%>%
+    mutate(CpfCnpjCredor = case_when(
+      nchar(CpfCnpjCredor) > 11 ~ str_pad(CpfCnpjCredor, pad = '0', side = 'left', width = 14),
+      T ~ str_pad(CpfCnpjCredor, pad = '0', side = 'left', width = 11)))%>%
+    mutate(DataEmpenho = as.character(DataEmpenho), ValorPago= as.character(ValorPago))
+  
+  a_empenho<- empenhos %>%
+    mutate(start=NA, end=NA)%>%
+    select(from = CnpjUnidadeGestora,
+           to = CpfCnpjCredor,
+           start, end,
+           role = ValorPago)%>%
+    filter(!is.na(from)) %>%
+    filter(!is.na(to)) %>%
+    mutate(type = 'empenho')%>%
+    filter(!is.na(from), !is.na(to))
+  
+  v_cnpj_credor<- empenhos %>%
+    select(id = CpfCnpjCredor, title = Credor) %>%
+    filter(!is.na(id)) %>%
+    mutate(group = "PJ_PRIVADO")%>%
+    filter(!duplicated(id))%>%
+    left_join(select(vertices, id), by='id')
+  
+  v_unidade_gestora <- empenhos %>%
+    select(id = CnpjUnidadeGestora, title = UnidadeGestora)%>%
+    filter(!is.na(id))%>%
+    mutate(group = "PJ_PUBLICO")%>%
+    filter(!duplicated(id))%>%
+    left_join(select(vertices,id), by = 'id')
+  
+  vertices <- vertices %>%
+    bind_rows(v_cnpj_credor) %>%
+    bind_rows(v_unidade_gestora)
+  
   # Worksheet "9_Socio_Parentesco" ############################################################################
   
   # socio_parentesco <- socio_parentesco%>%
@@ -822,6 +942,7 @@ ORDER BY A.CO_CPF,
     #bind_rows(a_socio_parentesco) %>%
     bind_rows(a_vinculo_servidor_pub) %>%
     bind_rows(a_vinculo_socio_servidor) %>%
+    bind_rows(a_empenho)%>%
     filter(from %in% vertices$id, to %in% vertices$id) %>% 
     unique()
   

@@ -61,8 +61,8 @@ shiny::shinyUI( function(){
         #pickerInput("selectEdges", label = "Exibir Apenas:", choices = list("Socios" = "sociedade", "Parentes" = "parentesco", "Vinculo Empregaticio" = "vinculo_empregaticio"), multiple = TRUE),
         checkboxGroupInput("selectEdges", label = "Exibir Apenas:",
                            choices = list("Socios" = "sociedade", "Parentes" = "parentesco", 
-                                          "Vinculo Empregaticio" = "vinculo_empregaticio", "Telefones" = "telefone_empresa"),
-                           selected = c("sociedade", "parentesco", "vinculo_empregaticio", "telefone_empresa")),
+                                          "Vinculo Empregaticio" = "vinculo_empregaticio", "Telefones" = "telefone_empresa", "Empenhos" = "empenho"),
+                           selected = c("sociedade", "parentesco", "vinculo_empregaticio", "telefone_empresa", "empenho")),
         selectizeInput("op_parentes", label = "Escolha um tipo de Relacionamento:", choices = NULL, multiple = TRUE, width = '100%'),
         textInput(
           "text_cnpj", label = "Consulta cnpj:", width = '100%'
