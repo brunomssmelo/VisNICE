@@ -4,8 +4,9 @@ observe({
     rename(id = name)
   
   # nodes_pj <- graph_nodes %>%
-  #   filter(group != 'PF') %>% # <------- MUDAR AQUI (Contemplar separadamente PJ público e privado)
+  #   filter(group != 'PF') %>% # <------- MUDAR AQUI (Contemplar separadamente PJ pÃºblico e privado)
   #   select(id, title)
+  
   
   nodes_pj <- graph_nodes %>%
     filter(str_detect(group, 'PJ')) %>%
@@ -26,6 +27,8 @@ observe({
   
   updateMultiInput(session, "multiSelectNodesPF",
                    choices = choices_pf)
+  
+  #updateSelectizeInput(session, "input_cnpj", choices = choices_cnpj)
   
   graph_edges <- igraph::as_data_frame(dataos()$graph, what = 'edges')
   
@@ -57,7 +60,7 @@ observe({
     # atualiza raio de vizinhanca
     ego_radius(input$sldRaioVizinhanca)
     
-    # atualiza lista de nós selecionados
+    # atualiza lista de nÃ³s selecionados
     selected_nodes(selected)
     
 })

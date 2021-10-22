@@ -5,30 +5,37 @@ dataos <- reactive({
     
     if(input$switchChoose){
       
-      cnpj <- ""
+      cnpj <- NULL
       
       if(input$search_cnpj)
         cnpj <- isolate(input$text_cnpj)
+
+      # passar como parametro o input de cnpjs
+      nice_data <- load_data(cnpj) # load_connection_sql(cnpj) 
       
-      nice_data <- load_connection_sql(cnpj)#passar como parametro o input de cnpjs
+      # updateMultiInput(updateMultiInput(session, "multiSelectNodesPJ",
+      #                                   selected = select_cnpj))
       
+     
       is_sample_data(FALSE)
-      
+
       graph_data <- list(
         edges = nice_data$edges,
-        nodes = nice_data$nodes
+        nodes = nice_data$nodes,
+        data = nice_data$data
       )
-    }
+     }
   }else{
     tryCatch(
       {
-        nice_data <- load_xlsx_nice(input$data_file$datapath)
+        nice_data <- load_data(input$data_file$datapath) # load_xlsx_nice(input$data_file$datapath)
         
         is_sample_data(FALSE)
         
         graph_data <- list(
           edges = nice_data$edges,
-          nodes = nice_data$nodes
+          nodes = nice_data$nodes,
+          data = nice_data$data
         )
       },
       error = function(e) {
@@ -37,7 +44,7 @@ dataos <- reactive({
       }
     )
   }
-  
+
   # atualiza filtro temporal de sócio
   data_start_date(get_role_min_date(graph_data, 'socio'))
   data_end_date(get_role_max_date(graph_data, 'socio'))
@@ -51,6 +58,6 @@ dataos <- reactive({
   
   filter_start_date_serv(data_start_date_serv)
   filter_end_date_serv(data_end_date_serv)
-  
+
   build_source_graph(graph_data)
 })

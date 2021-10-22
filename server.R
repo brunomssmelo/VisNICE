@@ -1,5 +1,6 @@
 require(tidyverse)
 require(readr)
+require(stringi)
 require(readxl)
 require(writexl)
 require(fastDummies)
@@ -10,14 +11,15 @@ require(dashboardthemes)
 require(shinyjs)
 require(shinybusy)
 require(visNetwork)
+require(shinydashboard)
+require(dplyr)
 
 # https://www.statsandr.com/blog/how-to-embed-a-shiny-app-in-blogdown/
 
+source('./src/funcoes_carregamento.R', encoding = "UTF-8")
 source('./src/funcoes_processamento.R', encoding = "UTF-8")
-source('./src/funcoes_processamento_SQL.R', encoding = "UTF-8")
 source('./src/funcoes_grafos.R', encoding = "UTF-8")
 
-# data <- load_xlsx_nice('./dados/CruzamentoDados_0762020_SCE.xlsx')
 # 
 # data_nice$a_socio = data$a_socio
 # data_nice$a_parente = data$a_parente
@@ -29,12 +31,14 @@ source('./src/funcoes_grafos.R', encoding = "UTF-8")
 
 shinyServer(function(input, output, session){
   
-  sample_data_rds <- read_rds('./dados/sample_data.rds')
+  sample_data_rds <- read_rds('F:/CTE/_TI/Estagiarios/Yuri/Projetogit/VisNICE/dados/sample_data.rds')
   
   selected_nodes <- reactiveVal(NULL)
   ego_radius <- reactiveVal(1)
   sample_data <- reactiveVal(sample_data_rds)
   is_sample_data <- reactiveVal(TRUE)
+  select_cnpj<- reactiveVal(NULL)
+  #choices_pj <- reactiveVal(NULL)
   
   # As datas iniciais e finais do filtro de sócios coincidirão com as datas
   # mínimas e máximas dos vínculos societários presentes em toda a base de dados
