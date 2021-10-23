@@ -5,6 +5,8 @@ require(visNetwork)
 require(shinybusy)
 require(dashboardthemes)
 require(readr)
+require(DT)
+require(formattable)
 
 # shiny::shinyUI(
 #   shiny::navbarPage(
@@ -33,39 +35,20 @@ shiny::shinyUI( function(){
       
       sliderInput("sldRaioVizinhanca", label = "Raio da vizinhança", min = 1, 
                   max = 4, value = 1, width = '100%'),
-      
-      sliderInput("sldFiltroTemporal", label = "Filtro temporal societario",
-                  min = as.Date("2000-01-01"),
-                  max = as.Date("2021-03-15"),
-                  value = c(
-                    as.Date("2000-01-01"),
-                    as.Date("2021-03-15")
-                  ),
-                  width = '100%'
-      ),
-      
-      sliderInput("sldFiltroTemporalServ", label = "Filtro temporal de vinculo empregaticio",
-                  min = as.Date("2000-01-01"),
-                  max = as.Date("2021-08-19"),
-                  value = c(
-                    as.Date("2000-01-01"),
-                    as.Date("2021-08-19")
-                  ),
-                  width = '100%'
-      ),
-      
+      bookmarkButton(label = "Salvar para depois", id = "bookmark"),
+      tags$head(tags$style(type="text/css", "#bookmark {background-color:#428bca;color: #fff};")),
       selectInput("selectFocusNode", "Foco no nó :", choices = NULL, width = '100%'),
       sliderInput("sliderFocusScale", "Escala do foco : ",
                   min = 1, max = 4, value = 2, width = '100%'),
       div(
              #pickerInput("selectEdges", label = "Exibir Apenas:", choices = list("Socios" = "sociedade", "Parentes" = "parentesco", "Vinculo Empregaticio" = "vinculo_empregaticio"), multiple = TRUE),
-             checkboxGroupInput("selectEdges", label = "Exibir Apenas:",
-                                choices = list("Socios" = "sociedade", "Parentes" = "parentesco", 
-                                               "Vinculo Empregaticio" = "vinculo_empregaticio", "Telefones" = "telefone_empresa"),
-                                selected = c("sociedade", "parentesco", "vinculo_empregaticio", "telefone_empresa")),
-             selectizeInput("op_parentes", label = "Escolha um tipo de Relacionamento:", choices = NULL, multiple = TRUE, width = '100%')
+             #selectizeInput("op_parentes", label = "Escolha um tipo de Relacionamento:", choices = NULL, multiple = TRUE, width = '100%'),
+            textInput(
+               "text_cnpj", label = "Consulta cnpj:", width = '100%'
              ),
-      
+            actionButton("search_cnpj", "Buscar"),
+            tags$head(tags$style(type="text/css", "#search_cnpj {background-color:#428bca;color: #fff};"))
+             ),
       
       column(
         width = 12,
@@ -97,7 +80,7 @@ shiny::shinyUI( function(){
         materialSwitch(
           inputId = "switchChoose",
           label = "Mudar para dados do Banco SQL",
-          value = FALSE,
+          value = TRUE,
           status = "primary",
           width = '100%'
         )),
@@ -117,12 +100,9 @@ shiny::shinyUI( function(){
         theme = "onenote"
       ),
        # Acrescenta um icone de carregamento
-      fluidRow(column(width = 12, align="right",
-      bookmarkButton(label = "Salvar para depois"))),
-      br(),
       add_busy_spinner(spin = "fading-circle", color = "blue", timeout = 1000, position = "full-page"),
       source("./src/ui/proxy_viz_ui.R", local = TRUE, encoding = 'UTF-8')$value,
-      source("./src/ui/proxy_data_source_ui.R", local = TRUE, encoding = 'UTF-8')$value,
+      # source("./src/ui/proxy_data_source_ui.R", local = TRUE, encoding = 'UTF-8')$value,
       source("./src/ui/proxy_graph_structure_ui.R", local = TRUE, encoding = 'UTF-8')$value
     )
   )}
