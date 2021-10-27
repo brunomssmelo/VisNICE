@@ -1,90 +1,63 @@
-load_from_xlsx <- function(data_path){
+load_From_xlsx <- function(data_path){
   library(tidyverse)
   library(readxl)
   
-  # Worksheet "Listados" #################################################################################
-  
-  ws_listados <- read_excel(data_path,
-                            sheet = "Listados")
-  
-  ws_listados <- ws_listados %>% 
-    filter(nchar(NUM_CNPJ_CPF)==14) %>%  
-    select(id = NUM_CNPJ_CPF, title = NOME, level = NIVEL) %>% 
-    arrange(level) %>% 
-    filter(!duplicated(id))
-  
-  # cria um "vetor nomeado" com o objetivo de recuperar CNPJs a partir dos nomes das empresas
-  # obs.: isto é só um bacalhau para solucionar parcialmente o fato de a aba "3_Socio" estar trazendo NULL
-  # para os sócios do tipo PJ
-  company_name_to_id <- ws_listados$id %>% 
-    `names<-`(ws_listados$title)
-  
-  # Worksheet "1_CNPJ" ###################################################################################
+  # Worksheet cnpjs ###################################################################################
   
   ws_cnpj <- read_excel(data_path,
-                        sheet = "1_CNPJ",
+                        sheet = "cnpjs",
                         col_types = c("text", rep("guess", 25)))
   
-  # Worksheet "3_Socio" ##################################################################################
-  
+  # Worksheet socios ##################################################################################
   ws_socios <- read_excel(data_path,
-                          sheet = "3_Socio",
-                          na = 'NULL',
-                          col_types = c("text", "guess", "text", rep("guess", 5)))
+                       sheet = "socios",
+                       col_types = c(rep("text",6), rep("guess", 3)))
   
-  # Worksheet "8_Parentesco" #############################################################################
+  # Worksheet empenhos ##################################################################################
+  
+  ws_empenhos <- read_excel(data_path,
+                            sheet = "empenhos",
+                            na = 'NULL',
+                            col_types = c(rep("guess", 26)))
+  
+  # Worksheet parentesco ############################################################################
   
   ws_parentesco <- read_excel(data_path,
-                              sheet = "8_Parentesco",
+                              sheet = "parentesco",
                               na = 'NULL',
-                              col_types = 'text') %>% 
-    mutate(CPF1 = str_pad(CPF1, pad = '0', side = 'left', width = 11),
-           CPF2 = str_pad(CPF2, pad = '0', side = 'left', width = 11))
+                              col_types = c(rep("text",6)))
   
-  # Worksheet "17_Parente_Org_Publico" ###################################################################
+  # Worksheet telefones ############################################################################
   
-  ws_parente_org_publico <- read_excel(data_path,
-                                       sheet = "17_Parente_Org_Publico",
+  ws_telefones <- read_excel(data_path,
+                             sheet = "telefones",
+                             na = 'NULL',
+                             col_types = rep("text",4))
+  
+  # Worksheet func_na_adm_publica ############################################################################
+  
+  ws_func_na_adm_publica <- read_excel(data_path,
+                                       sheet = "func_na_adm_publica",
                                        na = 'NULL',
                                        col_types = c(rep("text",7), rep("guess", 3)))
   
-  # Worksheet "2_Telefones" ##############################################################################
+  # Worksheet sancionados ############################################################################
+  ws_sancionado <- read_excel(data_path,
+                              sheet = "sancionados",
+                              na = 'NULL',
+                              col_types = rep("text",3))
   
-  ws_telefones <- read_excel(data_path,
-                             sheet = "2_Telefones",
-                             na = 'NULL',
-                             col_types = rep("text",6))
-  
-  # Worksheet "9_Socio_Parentesco" #######################################################################
-  
-  ws_socio_parentesco <- read_excel(data_path,
-                                    sheet = "9_Socio_Parentesco",
-                                    na = 'NULL',
-                                    col_types = c(rep("text",5), rep("guess", 10)))
-  # Worksheet "15_Func_Org_Publico" ######################################################################
-  
-  ws_func_org_publico <- read_excel(data_path,
-                                    sheet = "15_Func_Org_Publico",
-                                    na = 'NULL',
-                                    col_types = c(rep("text",7), rep("guess", 3)))
-  # Worksheet "16_Socios_Org_Publico" ####################################################################
-  
-  ws_socios_org_publico <- read_excel(data_path,
-                                      sheet = "16_Socios_Org_Publico",
-                                      na = 'NULL',
-                                      col_types = c(rep("text",7), rep("guess", 3)))
-  
-  
-  
-  # Retrona lista com as tabelas já convertidas do encoding nativo do Excel (latin1) para UTF8 -----------
+  # Retorna lista com as tabelas já convertidas do encoding nativo do Excel (latin1) para UTF8 -----------
   list(
-    parentesco = FixDataFrameEncoding(ws_parentesco),
-    # empenhos = FixDataFrameEncoding(empenhos),
-    socio_org_publico = FixDataFrameEncoding(ws_socios_org_publico),
-    cnpjs = FixDataFrameEncoding(ws_cnpj),
-    func_na_adm_publica = FixDataFrameEncoding(ws_func_org_publico),
-    # sancionados = FixDataFrameEncoding(sancionados) 
-    socio_parentesco <- FixDataFrameEncoding(ws_socio_parentesco)
+    cnpjs = Corrige_Codificacao_Dataframe(ws_cnpj),
+    socios = Corrige_Codificacao_Dataframe(ws_socios),
+    empenhos = Corrige_Codificacao_Dataframe(ws_empenhos),
+    parentesco = Corrige_Codificacao_Dataframe(ws_parentesco),
+    telefones = Corrige_Codificacao_Dataframe(ws_telefones),
+    #socio_org_publico = Corrige_Codificacao_Dataframe(ws_socios_org_publico),
+    func_na_adm_publica = Corrige_Codificacao_Dataframe(ws_func_na_adm_publica),
+    sancionados = Corrige_Codificacao_Dataframe(ws_sancionado) 
+    #socio_parentesco <- Corrige_Codificacao_Dataframe(ws_socio_parentesco)
   )
   
 }
@@ -164,7 +137,7 @@ load_from_sgbd <- function(cnpj){
   cpfSociosNaAdmPublicaParte2_sql <- read_file("./src/sql/ConsultaAbaSociosServidoresParte2.sql")
   
   # XX - EMPENHOS ----------------------------------------------------------------------------------------
-  empenhos_sql <- read_file("./src/sql/ConsultaAbaEmpenhos.sql")
+  empenhos_sql <- read_file("./src/sql/ConsultaAbaEmpenhos2.sql")
   
   # XX - SANCIONADOS -------------------------------------------------------------------------------------
   sancionado_sql <- read_file("./src/sql/ConsultaAbaSancionados.sql")
@@ -193,17 +166,34 @@ load_from_sgbd <- function(cnpj){
   # Fechamento da conexão com o SQL SERVER ---------------------------------------------------------------
   DBI::dbDisconnect(con) 
   
-  # Retrona lista com as tabelas já convertidas do encoding nativo do SQL Server (latin1) para UTF8 ------
+  # Armazena os dados do banco em uma planilha excel ------------------------------------------------------
+  # Tratar caso ja exista um arquivo desse salvo
+  path <- "./dados/"
+  write_xlsx(
+    list(cnpjs = Corrige_Codificacao_Dataframe(cnpjs), 
+         empenhos = Corrige_Codificacao_Dataframe(empenhos), 
+         parentesco = Corrige_Codificacao_Dataframe(parentesco),
+         socios = Corrige_Codificacao_Dataframe(socios), 
+         socio_org_publico = Corrige_Codificacao_Dataframe(socio_org_publico),
+         func_na_adm_publica = Corrige_Codificacao_Dataframe(func_na_adm_publica), 
+         telefones = Corrige_Codificacao_Dataframe(telefones),
+         sancionados = Corrige_Codificacao_Dataframe(sancionados)),
+    path = paste(path,"dados_grafos_sql",Sys.Date(), ".xlsx"),
+    col_names = TRUE,
+    format_headers = TRUE,
+  )
+  
+  # Retorna lista com as tabelas já convertidas do encoding nativo do SQL Server (latin1) para UTF8 ------
   list(
-    parentesco = FixDataFrameEncoding(parentesco),
-    empenhos = FixDataFrameEncoding(empenhos),
-    socios = FixDataFrameEncoding(socios),
-    socio_org_publico = FixDataFrameEncoding(socio_org_publico),
-    cnpjs = FixDataFrameEncoding(cnpjs),
-    func_na_adm_publica = FixDataFrameEncoding(func_na_adm_publica),
-    sancionados = FixDataFrameEncoding(sancionados),
-    telefones = FixDataFrameEncoding(telefones)
-    #socio_parentesco <- FixDataFrameEncoding(socio_parentesco)
+    parentesco = Corrige_Codificacao_Dataframe(parentesco),
+    empenhos = Corrige_Codificacao_Dataframe(empenhos),
+    socios = Corrige_Codificacao_Dataframe(socios),
+    socio_org_publico = Corrige_Codificacao_Dataframe(socio_org_publico),
+    cnpjs = Corrige_Codificacao_Dataframe(cnpjs),
+    func_na_adm_publica = Corrige_Codificacao_Dataframe(func_na_adm_publica),
+    sancionados = Corrige_Codificacao_Dataframe(sancionados),
+    telefones = Corrige_Codificacao_Dataframe(telefones)
+    #socio_parentesco <- Corrige_Codificacao_Dataframe(socio_parentesco)
   )
 }
 
@@ -221,7 +211,7 @@ load_data <- function(data_source){
   if (is.null(data_source) || !file.exists(data_source)[1]) {
     data <- load_from_sgbd(data_source)
   }else{
-    data <- load_from_xlsx(data_source)
+    data <- load_From_xlsx(data_source)
   }
   
   # Tabela "cnpj" ------------------------------------------------------------------------------------------
@@ -514,19 +504,19 @@ load_data <- function(data_source){
     mutate(CpfCnpjCredor = case_when(
       nchar(CpfCnpjCredor) > 11 ~ str_pad(CpfCnpjCredor, pad = '0', side = 'left', width = 14),
       T ~ str_pad(CpfCnpjCredor, pad = '0', side = 'left', width = 11))) %>%
-    mutate(DataEmpenho = as.character(DataEmpenho)) %>%
-    filter(ValorPago > 0)
+    filter(TotalValorPago > 0)
   
   a_empenho <- empenhos %>%
-    mutate(start = NA, end = NA) %>% 
+    mutate(start = NA, end = NA) %>%
     select(from = CnpjUnidadeGestora,
            to = CpfCnpjCredor,
-           start, end,
-           valor = ValorPago) %>%
+           start, 
+           end,
+           valor = TotalValorPago) %>%
     filter(!is.na(from)) %>%
     filter(!is.na(to)) %>%
     group_by(from, to) %>% 
-    summarise(valor_total = sum(valor, na.rm = T), qntd = n()) %>% 
+    summarise(valor_total = sum(valor, na.rm = T), qntd = n(), start,end) %>% 
     ungroup() %>% 
     mutate(role = paste0('[', qntd, '] - ',
                          as.character(currency(valor_total,
@@ -546,7 +536,7 @@ load_data <- function(data_source){
   v_unidade_gestora <- empenhos %>%
     select(id = CnpjUnidadeGestora, title = UnidadeGestora) %>%
     filter(!is.na(id)) %>%
-    mutate(group = "PJ_PUBLICO" )%>%
+    mutate(group = "PJ_PUBLICO")%>%
     filter(!duplicated(id)) %>%
     left_join(select(vertices,id), by = 'id')
   
@@ -554,20 +544,37 @@ load_data <- function(data_source){
     bind_rows(v_cnpj_credor) %>%
     bind_rows(v_unidade_gestora)
   
-  # Tabela sancionados ---------------------------------------------------------------------------------------
+  # Tabela "sancionados" ---------------------------------------------------------------------------------------
   
   sancionados <- data$sancionados
   
-  sancionados <- sancionados %>% mutate(TIPO.DE.PESSOA= case_when(
-    str_detect(TIPO.DE.PESSOA, 'J')~"PJ_PRIVADO",
-    str_detect(TIPO.DE.PESSOA,'F')~"PF",
+  sancionados <- sancionados %>% mutate(TipoPessoa = case_when(
+    str_detect(TipoPessoa, 'J')~"PJ_PRIVADO",
+    str_detect(TipoPessoa,'F')~"PF",
     T~"PJ"
-  )) %>% mutate(CPF.OU.CNPJ.DO.SANCIONADO = as.character(CPF.OU.CNPJ.DO.SANCIONADO))
+  )) %>% mutate(CpfCnpjSancionado = as.character( CpfCnpjSancionado ))
   
+  # v_empresa_sancionada <- sancionados %>%
+  #   select(id = CpfCnpjSancionado, title = NomeOrgaoSancionador) %>%
+  #   filter(!is.na(id)) %>%
+  #   mutate(group = "PJ_PRIVADO") %>%
+  #   filter(!duplicated(id)) %>%
+  #   left_join(select(vertices, id), by ='id')
+  # 
+  # vertices <- vertices %>%
+  #   bind_rows(v_empresa_sancionada)
+  
+  # a_sancionados <- sancionados %>%
+  #   mutate(start = NA, end = NA) %>%
+  #   select(from = CnpjUnidadeGestora,
+  #          to = C,
+  #          start, 
+  #          end,
+  #          valor = TotalValorPago)
   #Verificacao se o cnpj informado e sancionado e mudanca da coloracao para vermelho
   vertices <- vertices %>%
     mutate(role = case_when(
-      id %in% sancionados$CPF.OU.CNPJ.DO.SANCIONADO ~ 'vermelho',
+      id %in% sancionados$CpfCnpjSancionado ~ 'vermelho',
       group == 'TEL' ~ 'telefones'
     ))
   
@@ -662,7 +669,8 @@ load_data <- function(data_source){
       pessoa_fisica = NULL, # quebra-galho
       empenho = empenhos,
       parentesco = parentesco,
-      socio = socios
+      socio = socios,
+      sancionado = sancionados
     )
   )
   

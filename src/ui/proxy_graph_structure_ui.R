@@ -15,7 +15,9 @@ shiny::tabsetPanel(id = 'tabset_principal',
         tabPanel('Parente',
           DT::DTOutput("tblParenteDetalhes")),
         tabPanel('Empenho',
-          DT::DTOutput("tblEmpenhoDetalhes"))
+          DT::DTOutput("tblEmpenhoDetalhes")),
+        tabPanel('Sanções',
+                 DT::DTOutput("tblSancoesDetalhes"))
         ))),
   tabPanel(
     title = "Dados retornados pela Consulta",
@@ -66,7 +68,7 @@ shiny::tabsetPanel(id = 'tabset_principal',
           column(
             width = 12,
             multiInput(
-              inputId = "multiSelectNodesPJ",
+              inputId = "multiSelectNodesPJAba3",
               # label = "Empresas/Orgaos Públicos:",
               label = '',
               choices = NULL,
@@ -83,7 +85,7 @@ shiny::tabsetPanel(id = 'tabset_principal',
           column(
             width = 12,
             multiInput(
-              inputId = "multiSelectNodesPF",
+              inputId = "multiSelectNodesPFAba3",
               # label = "Pessoas Físicas:",
               label = '',
               choices = NULL,
@@ -158,7 +160,7 @@ shiny::tabsetPanel(id = 'tabset_principal',
             width = 12,
             align="center",
             actionButton("btnIncluiTodosSanction",
-                         label = "Selecionar/Excluir Todos"))),
+                         label = "Selecionar/Excluir Todos")))
         ))),
   tabPanel(
     title = "Filtrar relacionamentos do Grafico",
@@ -166,13 +168,70 @@ shiny::tabsetPanel(id = 'tabset_principal',
       tabBox(
         width = 12,
         tabPanel(
-          'Parentesco'),
+          'Exibir Relacionamentos',
+          column(
+            width = 12,
+            pickerInput("selectEdges",
+                                choices = list("Socios" = "sociedade", "Parentes" = "parentesco", 
+                                              "Vinculo Empregaticio" = "vinculo_empregaticio", "Telefones" = "telefone_empresa", "Empenhos" = "empenho"),
+                               selected = c("sociedade", "parentesco", "vinculo_empregaticio", "telefone_empresa", "empenho"), 
+                               multiple = TRUE, width = '60%', options = pickerOptions(multipleSeparator = ';')))),
         tabPanel(
-          'Vínculos empegatícios'),
+          'Parentesco',
+          column(
+            width = 12,
+            selectizeInput("op_parentes", 
+                           label = "Escolha um tipo de Relacionamento:", 
+                           choices = NULL, 
+                           multiple = TRUE, 
+                           width = '100%'))),
         tabPanel(
-          'Vínculos societários'),
+          'Vínculos empegatícios',
+          column(
+            width = 6,
+            dateRangeInput("sldFiltroTemporalServ", label = "Filtro temporal de vinculo empregaticio",
+                           min = as.Date("2000-01-01"),
+                           max = as.Date("2021-03-15"),
+                           start = as.Date("2000-01-01"),
+                           end = as.Date("2018-12-31"),
+                           width = '100%',
+                           separator = 'à',
+                           startview = 'year'
+            ), actionButton("sincronizar_serv", label = "Sincronizar Todos"),
+              tags$head(tags$style(type="text/css", "#sincronizar_serv {background-color:#428bca;color: #fff}"))
+            )
+          ),
         tabPanel(
-          'Empenhos'),
+          'Vínculos societários',
+          column(
+           width = 6,
+           dateRangeInput("sldFiltroTemporal", label = "Filtro temporal societario",
+                          min = as.Date("2000-01-01"),
+                          max = as.Date("2021-03-15"),
+                          start = as.Date("2000-01-01"),
+                          end = as.Date("2021-03-15"),
+                          width = '100%',
+                          separator = 'à',
+                          startview = 'year'
+           ),
+           actionButton("sincronizar_socio", label = "Sincronizar Todos"),
+           tags$head(tags$style(type="text/css", "#sincronizar_socio {background-color:#428bca;color: #fff}"))
+          )
+        ),
+        tabPanel(
+          'Empenhos',
+          column(
+            width = 6,
+            dateRangeInput("sldFiltroTemporalEmpenhos", label = "Filtro temporal empenhos",
+                           min = as.Date("2000-01-01"),
+                           max = as.Date("2021-03-15"),
+                           start = as.Date("2000-01-01"),
+                           end = as.Date("2018-12-31"),
+                           width = '100%',
+                           separator = 'à',
+                           startview = 'year'
+            ))
+          ),
         tabPanel(
           'Sanções'))))
 )

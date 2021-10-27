@@ -1,12 +1,62 @@
+Popula_Multi_Input <- function(tipo, nome_input){
+  
+  vnodes <- visNodesEdges()$vnodes
+  vedges <- visNodesEdges()$vedges
+  
+  if(tipo == 'PJ'| tipo == 'PF'){
+    nodes_data <- vnodes %>%
+      filter(str_detect(group, tipo)) %>%
+      select(id, title)
+    
+    choices_data <- nodes_data$id
+    names(choices_data) <- paste0("[", nodes_data$id,"]: ", nodes_data$title)
+    
+    updateMultiInput(session, nome_input,
+                     choices = choices_data, selected = NULL)
+  } else {
+  
+  nodes_data <- vedges %>%
+    filter(type == tipo) %>%
+    select(from,to) %>%
+    unlist() %>%
+    unique()
+  
+  recupera_nodes_data <- vnodes %>%
+    filter(id %in% nodes_data) %>%
+    select(id, title) %>%
+    unique()
+  
+  choices_data <- recupera_nodes_data$id
+  names(choices_data) <- paste0("[", recupera_nodes_data$id, "]: ", recupera_nodes_data$title)
+  
+  updateMultiInput(session, nome_input,
+                   choices = choices_data)
+  }
+  
+}
+Seleciona_Dados <- function(selected_data, nome_input){
+  if(is.null(selected_data)){
+    isolate({
+      vnodes <- visNodesEdges()$vnodes
+      
+      nodes_pj <- vnodes %>%
+        filter(str_detect(group, 'PJ')) %>%
+        select(id, title)
+      
+      selected_data <- nodes_pj$id
+      
+      updateMultiInput(session, nome_input,
+                       selected = selected_data)
+    }) 
+  }
+}
+
 observe({
+  
+  selected_data <- NULL
   
   graph_nodes <- igraph::as_data_frame(dataos()$graph, what = 'vertices') %>% 
     rename(id = name)
-  
-  # nodes_pj <- graph_nodes %>%
-  #   filter(group != 'PF') %>% # <------- MUDAR AQUI (Contemplar separadamente PJ pÃºblico e privado)
-  #   select(id, title)
-  
   
   nodes_pj <- graph_nodes %>%
     filter(str_detect(group, 'PJ')) %>%
@@ -16,7 +66,7 @@ observe({
   names(choices_pj) <- paste0("[", nodes_pj$id,"]: ", nodes_pj$title)
   
   updateMultiInput(session, "multiSelectNodesPJ",
-                   choices = choices_pj)
+                   choices = choices_pj, selected = selected_data)
                    
   nodes_pf <- graph_nodes %>%
     filter(group == 'PF') %>%
@@ -26,21 +76,11 @@ observe({
   names(choices_pf) <- paste0("[", nodes_pf$id,"]: ", nodes_pf$title)
   
   updateMultiInput(session, "multiSelectNodesPF",
-                   choices = choices_pf)
+                   choices = choices_pf, selected = selected_data)
   
-  #updateSelectizeInput(session, "input_cnpj", choices = choices_cnpj)
-  
-  graph_edges <- igraph::as_data_frame(dataos()$graph, what = 'edges')
-  
-  edges_op <- graph_edges %>%
-    filter(type == 'parentesco') %>%
-    select(role) %>% unique()
-  
-  choices_op <- edges_op$role
-  
-  updateSelectizeInput(session, "op_parentes",
-                    choices = sort(choices_op))
-  
+  Seleciona_Dados(selected_data, "multiSelectNodesPJ")
+  Seleciona_Dados(selected_data, "multiSelectNodesPF")
+
   if(input$btnIncluiTodosPJ %%2 > 0){
     updateMultiInput(session, "multiSelectNodesPJ",
                       selected = choices_pj)
@@ -54,15 +94,28 @@ observe({
 })
 
 observe({
+
+  tryCatch({
+  Popula_Multi_Input('PF', 'multiSelectNodesPFAba3')
+  Popula_Multi_Input('PJ','multiSelectNodesPJAba3')
+  Popula_Multi_Input('parentesco','multiSelectEdgesParentes')
+  Popula_Multi_Input('empenho','multiSelectEdgesCommitment')
+  Popula_Multi_Input('vinculo_empregaticio','multiSelectEdgesEmployment')
+  }, error = function(e){
+    message("Não há dados presentes na visualização")
+  })
+  
+})
+
+observe({
     selected <- c(input$multiSelectNodesPJ,
                   input$multiSelectNodesPF)
-    
     # atualiza raio de vizinhanca
     ego_radius(input$sldRaioVizinhanca)
     
     # atualiza lista de nÃ³s selecionados
     selected_nodes(selected)
-    
+    #nos_selecionados(nos_selecionados_aba3)
 })
 
 observeEvent(input$network_auto_graphChange, {
@@ -77,9 +130,16 @@ observeEvent(input$network_auto_graphChange, {
                  stringsAsFactors = F)
     )
     
-    visNodesEdges()$vnodes = temp
+    #visNodesEdges()$vnodes = temp
     
   }
+})
+
+observe({
+  nos_selecionados_aba3 <- c(input$multiSelectNodesPJAba3,
+                             input$multiSelectNodesPFAba3)
+  
+  nos_selecionados(nos_selecionados_aba3)
 })
 
 output$btnDownload <- downloadHandler(

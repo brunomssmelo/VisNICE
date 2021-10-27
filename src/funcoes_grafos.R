@@ -30,6 +30,15 @@ get_role_min_date <- function(graph_data, edge_role){
     `$`(start) %>% min(na.rm = T)
 }
 
+#Destaca os elementos do gráfico
+# destaca_elementos <- function(node_data, nos_selecionados){
+#   node_data <- node_data %>% 
+#     mutate(shadow = case_when(
+#       id %in% nos_selecionados ~ TRUE,
+#       T ~ FALSE
+#     ))
+# }
+
 ego_graph <- function(graph, order, center_nodes){
   
   ego_graph <- make_ego_graph(graph, order = order,
@@ -38,13 +47,13 @@ ego_graph <- function(graph, order, center_nodes){
   
   # first convert the list of igraphs to list of data.frames
   ego_graph <- lapply(ego_graph, igraph::as_data_frame)
-
+  
   # then combine all the data.frames in the list into one data.frame
   ego_graph <- do.call(rbind, ego_graph)
-
+  
   # then make a graph out of the one combined data.frame
   ego_graph <- graph_from_data_frame(ego_graph)
-
+  
   # ego_nodes <- unique(rownames(igraph::as_data_frame(ego_graph, what = 'vertices')))
   # 
   # ego_nodes
@@ -57,26 +66,6 @@ build_source_graph <- function(graph_data){
   edges <- graph_data$edges
   
   data <- graph_data$data
-  
-  # nodes <- nodes %>% 
-  #   dummy_cols(select_columns = 'role') %>% 
-  #   select(-role) %>% 
-  #   group_by(id, title, group) %>%
-  #   summarise(
-  #     type = min(type),
-  #     role_parente = sum(role_parente) > 0,
-  #     role_socio = sum(role_socio) > 0,
-  #     role_empresa = sum(role_empresa) > 0,
-  #     role_servidor = sum(role_servidor) > 0,
-  #     role_orgao_publico = sum(role_orgao_publico) > 0
-  #   ) %>%
-  #   ungroup() %>%
-  #   filter(!duplicated(id))%>%
-  #   unique()
-  
- #nodes2 <- nodes %>% aggregate(nodes$title ~ nodes$id, FUN = max)
-    #group_by(nodes$id, nodes$title, nodes$group)%>%summarise_each(funs(max))
-  
   
   edges <- edges %>%
     mutate(start = as.character(start),
@@ -95,34 +84,48 @@ build_source_graph <- function(graph_data){
       type == 'empenho' ~ 'black',
       T ~ 'black'))
   
-  nodes<-nodes %>%
-    mutate(title=case_when(
-      role == 'vermelho'~ paste('<p style=color:red;><strong>Empresa_Sancionada: ',title,"</strong></p>"),
-      T~title
+  nodes <- nodes %>%
+    mutate(title = case_when(
+      role == 'vermelho'~ paste('<p style=color:red;><strong>Empresa_Sancionada: ', title, "</strong></p>"),
+      T ~ title
     ))
+  
+  # nodes <- nodes %>% 
+  #       mutate(shadow = case_when(
+  #         verifica_valores() ~ TRUE,
+  #         T ~ FALSE
+  #       ))
 
   graph <- graph_from_data_frame(d = edges,
                                  directed = TRUE,
                                  vertices = nodes)
-
+  
   # Nós centrais serão, a priori, as PJ solicitadas
-    # center_nodes <- nodes %>%
-    # filter(level==0, str_detect(group, 'PJ')) %>%
-    # select(id) %>%
-    # unlist()
-  filtro <- case_when(str_detect(nodes$group,'PJ_PRIVADO')~nodes$id)
+  # center_nodes <- nodes %>%
+  # filter(level==0, str_detect(group, 'PJ')) %>%
+  # select(id) %>%
+  # unlist()
+  filtro<- case_when(str_detect(nodes$group,'PJ_PRIVADO')~nodes$id)
   
-  filtro <- filtro[!is.na(filtro)]
-    
-    center_nodes <- nodes %>%
-      filter(id %in% filtro, str_detect(group, 'PJ')) %>%
-      select(id) %>%
-      unlist()
+  filtro<-filtro[!is.na(filtro)]
   
-   #center_nodes <- filter(nodes, type == 0) %>% select(id) %>% unlist() #<---- Não
-
+  center_nodes <- nodes %>%
+    filter(id %in% filtro, str_detect(group, 'PJ')) %>%
+    select(id) %>%
+    unlist()
+  
+  
+  #center_nodes <- filter(nodes, type == 0) %>% select(id) %>% unlist() #<---- Não
+  
   ledges <- data.frame(color = c("blue", "red", "purple", "E5C039", "black"),
                        label = c("sócio", "parente", "vinc_servidor", "telefones", "empenhos"), arrows =c("to","to", "to", "to","to"))
   
   list(graph = graph, ledges = ledges, center_nodes = center_nodes, data = data)
 }
+
+verifica_valores <- function(){
+  print(nos_selecionados)
+  return(TRUE)
+}
+
+

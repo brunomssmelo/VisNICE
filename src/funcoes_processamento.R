@@ -1,33 +1,33 @@
-FixDataFrameEncoding <- function(df, destEnconding = "UTF-8") {
+Corrige_Codificacao_Dataframe <- function(df, codificacao_destino = "UTF-8") {
   
   library(stringi)
   
-  numCols <- ncol(df)
+  num_col <- ncol(df)
   df <- data.frame(df)
-  for (col in 1:numCols)
+  for (col in 1:num_col)
   {
-    colClass <- class(df[, col])
+    classe_col <- class(df[, col])
     
-    if(length(intersect(colClass,c('factor', 'character')))>0){
+    if(length(intersect(classe_col,c('factor', 'character')))>0){
       
-      sourceEncoding <- stri_enc_detect(paste(df[, col], collapse = " "))[[1]]$Encoding
-      sourceEncoding <- sourceEncoding[sourceEncoding %in% iconvlist()][1]
+      codificacao_origem <- stri_enc_detect(paste(df[, col], collapse = " "))[[1]]$Encoding
+      codificacao_origem <- codificacao_origem[codificacao_origem %in% iconvlist()][1]
       
-      needsConversion <- ifelse(!is.na(sourceEncoding), sourceEncoding != destEnconding, F)
+      necessario_converter <- ifelse(!is.na(codificacao_origem), codificacao_origem != codificacao_destino, F)
       
-      if("character" %in% colClass){
-        if(needsConversion){
+      if("character" %in% classe_col){
+        if(necessario_converter){
           df[, col] <- iconv(df[, col],
-                             from = sourceEncoding,
-                             to = destEnconding)
+                             from = codificacao_origem,
+                             to = codificacao_destino)
         }
       }
       
-      if("factor" %in% colClass){
-        if(needsConversion){
+      if("factor" %in% classe_col){
+        if(necessario_converter){
           levels(df[, col]) <- iconv(levels(df[, col]),
-                                     from = sourceEncoding,
-                                     to = destEnconding)
+                                     from = codificacao_origem,
+                                     to = codificacao_destino)
         }
       }
     }

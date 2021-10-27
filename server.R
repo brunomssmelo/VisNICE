@@ -31,14 +31,14 @@ source('./src/funcoes_grafos.R', encoding = "UTF-8")
 
 shinyServer(function(input, output, session){
   
-  sample_data_rds <- read_rds('F:/CTE/_TI/Estagiarios/Yuri/Projetogit/VisNICE/dados/sample_data.rds')
+  sample_data_rds <- read_rds('./dados/sample_data.rds')
   
   selected_nodes <- reactiveVal(NULL)
   ego_radius <- reactiveVal(1)
   sample_data <- reactiveVal(sample_data_rds)
   is_sample_data <- reactiveVal(TRUE)
   select_cnpj<- reactiveVal(NULL)
-  #choices_pj <- reactiveVal(NULL)
+  nos_selecionados <- reactiveVal(NULL)
   
   # As datas iniciais e finais do filtro de sócios coincidirão com as datas
   # mínimas e máximas dos vínculos societários presentes em toda a base de dados
@@ -60,6 +60,11 @@ shinyServer(function(input, output, session){
   # em toda a base de dados
   data_start_date_serv <- reactiveVal(get_role_min_date(sample_data_rds, 'servidor'))
   data_end_date_serv <- reactiveVal(get_role_max_date(sample_data_rds, 'servidor'))
+  
+  # datas mínimas e máximas dos empenhos presentes em toda a base de
+  # dados
+  # data_start_date_emp <- reactiveVal(get_role_min_date_emp(sample_data_rds, 'empenho'))
+  # print(data_start_date_emp)
   
   source("./src/server/proxy_viz_server.R", local = TRUE, encoding = "UTF-8")
   source("./src/server/proxy_data_source_server.R", local = TRUE, encoding = "UTF-8")

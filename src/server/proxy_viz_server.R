@@ -2,7 +2,8 @@ visNodesEdges <- reactive({
   graph <- dataos()$graph
   center_nodes <- selected_nodes()
   radius <- ego_radius()
-  
+  input_nos <- nos_selecionados()
+
   # atualiza filtro temporal de sócio
   filter_start_date(input$sldFiltroTemporal[1])
   filter_end_date(input$sldFiltroTemporal[2])
@@ -10,6 +11,7 @@ visNodesEdges <- reactive({
   # atualiza filtro temporal vinculo empregaticio
   filter_start_date_serv(input$sldFiltroTemporalServ[1])
   filter_end_date_serv(input$sldFiltroTemporalServ[2])
+  
   
   if(is.null(center_nodes))
     center_nodes <- dataos()$center_nodes
@@ -24,7 +26,8 @@ visNodesEdges <- reactive({
   ego_nodes <- igraph::as_data_frame(ego, what = 'vertices') %>% 
     rename(id = name) %>% 
     left_join(graph_nodes, by = 'id')
-  
+
+
   # aplicação dos filtros temporais
   vedges <- ego_edges %>%
     filter(check_filter_interval(.,filter_start_date(),
@@ -34,17 +37,20 @@ visNodesEdges <- reactive({
                                  filter_end_date_serv(),
                                  'vinculo_empregaticio'))
   
-  if(!is.null(input$selectEdges)){
+  # vnodes <- ego_nodes %>%
+  #   destaca_elementos(.,input_nos)
+  
+  if(!is.null(input$op_parentes)){
+  
+    op_parentes <- input$op_parentes
     vedges <- vedges %>%
-      filter(type %in% input$selectEdges) %>%
+      filter(role %in% op_parentes | type != 'parentesco') %>%
       unique()
   }
   
-  if(!is.null(input$op_parentes)){
-    op_parentes <- input$op_parentes
-    
+  if(!is.null(input$selectEdges)){
     vedges <- vedges %>%
-      filter(role %in% op_parentes | type != 'parentesco') %>%
+      filter(type %in% input$selectEdges) %>%
       unique()
   }
   
@@ -52,30 +58,45 @@ visNodesEdges <- reactive({
     filter((id %in% vedges$from) | (id %in% vedges$to)) %>%
     unique()
   
+  if(!is.null(input_nos)){
+    isolate({
+      vnodes <- vnodes %>%
+    mutate(shadow = case_when(
+      id %in% input_nos ~ TRUE,
+      T ~ FALSE
+    ))
+    })
+    
+  }
+  
   choices_nodes <- vnodes$id
   names(choices_nodes) <- paste("[", vnodes$id, "]: ", vnodes$title)
   
   updateSelectInput(session, 'selectFocusNode',
                     choices = choices_nodes, selected = center_nodes[1])
   
+  parentesco_selecionados <- vedges %>%
+    filter(type == 'parentesco') %>%
+    select(role) %>%
+    unlist() %>%
+    unique()
+  
+  todos_parentesco <- graph_edges %>%
+    filter(type == 'parentesco') %>%
+    select(role) %>%
+    unlist() %>%
+    unique()
+  
+  updateSelectizeInput(session, "op_parentes",
+                       choices = todos_parentesco, selected = parentesco_selecionados)
+  
   list(vnodes = vnodes, vedges = vedges)
 })
 
 output$network_auto <- renderVisNetwork({
   
-  # browser()
-  
   vnodes <- visNodesEdges()$vnodes
   vedges <- visNodesEdges()$vedges
-  
-  
-  #Mudanca da cor do no para vermelho por ser sancionado
-  # vnodes <- vnodes %>%
-  #  visNodes(
-  #     color = case_when(
-  #       role == 'vermelho' ~ 'red'
-  #     ))
-  
   
   title <- ''
   subtitle <- ''
@@ -106,7 +127,6 @@ output$network_auto <- renderVisNetwork({
             Shiny.onInputChange('current_edges_selected', data.edges);
             ;}") %>%
     visExport(type = 'jpeg', label = "Exportar como jpeg")
-  #print(vis)
   
   vis
 })
@@ -147,7 +167,7 @@ output$network_not_auto <- renderVisNetwork({
     visLegend(addEdges = dataos()$ledges, position = 'right') %>%
     visOptions(manipulation = input$switchEditMode) %>%
     visExport(type = 'jpeg', label = "Exportar como jpeg")
-  
+
   vis
 })
 
@@ -163,40 +183,34 @@ observe({
 
 observe({
   
-  updateSliderInput(session, 'sldFiltroTemporal',
+  updateDateRangeInput(session, 'sldFiltroTemporal',
                     min = as.Date(data_start_date()),
                     max = as.Date(data_end_date()),
-                    value = c(as.Date(filter_start_date()),
-                              as.Date(filter_end_date())))
+                    start = as.Date(filter_start_date()),
+                    end = as.Date(filter_end_date()))
   
-  updateSliderInput(session, 'sldFiltroTemporalServ',
+  updateDateRangeInput(session, 'sldFiltroTemporalServ',
                     min = as.Date(data_start_date_serv()),
                     max = as.Date(data_end_date_serv()),
-                    value = c(as.Date(filter_start_date_serv()),
-                              as.Date(filter_end_date_serv())))
-})
-
-#Atualiza os nos selecionados
-observe({
-  vnodes <- visNodesEdges()$vnodes
+                          start = as.Date(filter_start_date_serv()),
+                          end = as.Date(filter_end_date_serv()))
   
-  multi_choices_PJ <- vnodes %>%
-    filter(str_detect(group,'PJ'))%>%
-    select(id, title)%>%
-    unlist()
+    #sincroniza os filtros temporais
+   if(input$sincronizar_serv){
+     updateDateRangeInput(session, 'sldFiltroTemporal',
+                          min = as.Date(data_start_date()),
+                          max = as.Date(data_end_date()),
+                          start = input$sldFiltroTemporalServ[1],
+                          end = input$sldFiltroTemporalServ[2])
+   }
+  if(input$sincronizar_socio){
+    updateDateRangeInput(session, 'sldFiltroTemporalServ',
+                         min = as.Date(data_start_date_serv()),
+                         max = as.Date(data_end_date_serv()),
+                         start = input$sldFiltroTemporal[1],
+                         end = input$sldFiltroTemporal[2])
+  }
   
-  # multi_choices_PF <- vnodes %>%
-  #   filter(str_detect(group,'PF'))%>%
-  #   select(id, title)%>%
-  #   unlist()
-  #multi_choices <- multi_choices_pj$id
-  # names(multi_choices) <- paste0("[", multi_choices_pj$id,"]: ", multi_choices_pj$title)
-  
-  if(input$search_cnpj)
-    updateMultiInput(session, "multiSelectNodesPJ",
-                     selected = multi_choices_PJ)
-  # updateMultiInput(session, "multiSelectNodesPF",
-  #                  selected = multi_choices_PF)
 })
 
 output$tblPjDetalhes <- renderDT({
@@ -269,7 +283,7 @@ output$tblEmpenhoDetalhes <- renderDT({
       selected_edges <- dataos()$data$empenho %>%
         inner_join(select(selected_edges, CnpjUnidadeGestora = from, CpfCnpjCredor = to)) %>% 
         distinct() %>% 
-        arrange(DataEmpenho)
+        arrange(DataInicio)
     }
   }
   
@@ -315,3 +329,22 @@ output$tblSocioDetalhes <- renderDT({
   
   selected_edges
 }, options = list(scrollX = TRUE))
+
+output$tblSancoesDetalhes <- renderDT({
+  
+  selected_edges <- input$current_edges_selected
+  
+  if (!is.null(selected_edges)){
+    selected_edges <- visNodesEdges()$vedges %>% 
+      filter(id %in% selected_edges) %>%
+      #filter() %>% 
+      distinct()
+    
+    if (!is.null(selected_edges) & !is.null(dataos()$data$sancionado)){
+      selected_edges <- dataos()$data$sancionado %>%
+        inner_join(select(selected_edges, by = c("id" = "id"))) %>% 
+        distinct() %>%
+        arrange(id)
+    }
+  }
+})

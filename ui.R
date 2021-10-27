@@ -35,37 +35,14 @@ shiny::shinyUI( function(){
       
       sliderInput("sldRaioVizinhanca", label = "Raio da vizinhança", min = 1, 
                   max = 4, value = 1, width = '100%'),
-      
-      sliderInput("sldFiltroTemporal", label = "Filtro temporal societario",
-                  min = as.Date("2000-01-01"),
-                  max = as.Date("2021-03-15"),
-                  value = c(
-                    as.Date("2000-01-01"),
-                    as.Date("2021-03-15")
-                  ),
-                  width = '100%'
-      ),
-      
-      sliderInput("sldFiltroTemporalServ", label = "Filtro temporal de vinculo empregaticio",
-                  min = as.Date("2000-01-01"),
-                  max = as.Date("2021-08-19"),
-                  value = c(
-                    as.Date("2000-01-01"),
-                    as.Date("2021-08-19")
-                  ),
-                  width = '100%'
-      ),
-      
+      bookmarkButton(label = "Salvar para depois", id = "bookmark"),
+      tags$head(tags$style(type="text/css", "#bookmark {background-color:#428bca;color: #fff};")),
       selectInput("selectFocusNode", "Foco no nó :", choices = NULL, width = '100%'),
       sliderInput("sliderFocusScale", "Escala do foco : ",
                   min = 1, max = 4, value = 2, width = '100%'),
       div(
              #pickerInput("selectEdges", label = "Exibir Apenas:", choices = list("Socios" = "sociedade", "Parentes" = "parentesco", "Vinculo Empregaticio" = "vinculo_empregaticio"), multiple = TRUE),
-             checkboxGroupInput("selectEdges", label = "Exibir Apenas:",
-                                choices = list("Socios" = "sociedade", "Parentes" = "parentesco", 
-                                               "Vinculo Empregaticio" = "vinculo_empregaticio", "Telefones" = "telefone_empresa", "Empenhos" = "empenho"),
-                                selected = c("sociedade", "parentesco", "vinculo_empregaticio", "telefone_empresa", "empenho")),
-             selectizeInput("op_parentes", label = "Escolha um tipo de Relacionamento:", choices = NULL, multiple = TRUE, width = '100%'),
+             #selectizeInput("op_parentes", label = "Escolha um tipo de Relacionamento:", choices = NULL, multiple = TRUE, width = '100%'),
             textInput(
                "text_cnpj", label = "Consulta cnpj:", width = '100%'
              ),
@@ -77,24 +54,24 @@ shiny::shinyUI( function(){
         width = 12,
         style = "color: #000",
         materialSwitch(
-        inputId = "switchAutoRefresh",
-        label = "Ativar atualização automática", 
-        value = TRUE,
-        status = "primary",
-        width = '100%'
-      )) ,
+          inputId = "switchAutoRefresh",
+          label = "Ativar atualização automática", 
+          value = TRUE,
+          status = "primary",
+          width = '100%'
+        )) ,
       column(
         width = 12,
         style = "color: #000",
         align = "left",
         offset = 0,
         materialSwitch(
-        inputId = "switchEditMode",
-        label = "Ativar modo de edição",
-        value = FALSE,
-        status = "primary",
-        width = '100%',
-      )),
+          inputId = "switchEditMode",
+          label = "Ativar modo de edição",
+          value = FALSE,
+          status = "primary",
+          width = '100%',
+        )),
       
       column(
         width = 12,
@@ -113,18 +90,18 @@ shiny::shinyUI( function(){
         align = "left",
         offset = 0,
         downloadButton("btnDownload", "Baixar dados da visualização", width = '100%')
-        ),
+      ),
       tags$head(tags$style(type="text/css", "#btnDownload {background-color:#428bca;color: #fff};"),
                 tags$style(HTML(".span {color: black}"))
-                )
+      )
     ),
     dashboardBody(
       shinyDashboardThemes(
         theme = "onenote"
       ),
-       # Acrescenta um icone de carregamento
+      # Acrescenta um icone de carregamento
       fluidRow(column(width = 12, align="right",
-      bookmarkButton(label = "Salvar para depois"))),
+                      bookmarkButton(label = "Salvar para depois"))),
       br(),
       add_busy_spinner(spin = "fading-circle", color = "blue", timeout = 1000, position = "full-page"),
       source("./src/ui/proxy_viz_ui.R", local = TRUE, encoding = 'UTF-8')$value,
