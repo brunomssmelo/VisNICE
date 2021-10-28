@@ -34,16 +34,17 @@ Popula_Multi_Input <- function(tipo, nome_input){
   }
   
 }
-Seleciona_Dados <- function(selected_data, nome_input){
+Seleciona_Dados <- function(selected_data, nome_input, tipo){
   if(is.null(selected_data)){
     isolate({
       vnodes <- visNodesEdges()$vnodes
       
-      nodes_pj <- vnodes %>%
-        filter(str_detect(group, 'PJ')) %>%
-        select(id, title)
+      nodes <- vnodes %>%
+        filter(str_detect(group, tipo)) %>%
+        select(id, title) %>%
+        unique()
       
-      selected_data <- nodes_pj$id
+      selected_data <- nodes$id
       
       updateMultiInput(session, nome_input,
                        selected = selected_data)
@@ -53,7 +54,8 @@ Seleciona_Dados <- function(selected_data, nome_input){
 
 observe({
   
-  selected_data <- NULL
+  selected_data_pj <- NULL
+  selected_data_pf <- NULL
   
   graph_nodes <- igraph::as_data_frame(dataos()$graph, what = 'vertices') %>% 
     rename(id = name)
@@ -66,7 +68,7 @@ observe({
   names(choices_pj) <- paste0("[", nodes_pj$id,"]: ", nodes_pj$title)
   
   updateMultiInput(session, "multiSelectNodesPJ",
-                   choices = choices_pj, selected = selected_data)
+                   choices = choices_pj, selected = selected_data_pj)
                    
   nodes_pf <- graph_nodes %>%
     filter(group == 'PF') %>%
@@ -76,10 +78,10 @@ observe({
   names(choices_pf) <- paste0("[", nodes_pf$id,"]: ", nodes_pf$title)
   
   updateMultiInput(session, "multiSelectNodesPF",
-                   choices = choices_pf, selected = selected_data)
+                   choices = choices_pf, selected = selected_data_pf)
   
-  Seleciona_Dados(selected_data, "multiSelectNodesPJ")
-  Seleciona_Dados(selected_data, "multiSelectNodesPF")
+  Seleciona_Dados(selected_data_pj, "multiSelectNodesPJ", "PJ")
+  Seleciona_Dados(selected_data_pf, "multiSelectNodesPF", "PF")
 
   if(input$btnIncluiTodosPJ %%2 > 0){
     updateMultiInput(session, "multiSelectNodesPJ",
@@ -137,7 +139,10 @@ observeEvent(input$network_auto_graphChange, {
 
 observe({
   nos_selecionados_aba3 <- c(input$multiSelectNodesPJAba3,
-                             input$multiSelectNodesPFAba3)
+                             input$multiSelectNodesPFAba3,
+                             input$multiSelectEdgesParentes,
+                             input$multiSelectEdgesEmployment,
+                             input$multiSelectEdgesCommitment)
   
   nos_selecionados(nos_selecionados_aba3)
 })

@@ -64,6 +64,9 @@ load_From_xlsx <- function(data_path){
 
 
 load_from_sgbd <- function(cnpj){
+  library(stringi)
+  library(readxl)
+  library(dplyr)
   # Abertura de conexao com o SQL SERVER -----------------------------------------------------------------
   tryCatch({
     con <- dbConnect(odbc(),
@@ -127,6 +130,14 @@ load_from_sgbd <- function(cnpj){
   
   SocioParentesco_sql <- read_file("./src/sql/ConsultaAbaSocioParente.sql")
   
+  # 10 - RAIS - CAPACIDADE OPERACIONAL ------------------------------------------
+  
+  contagem_rais_sql <- read_file("./src/sql/ConsultaAbaRais.sql")
+  
+  # 12 - CAGED - CAPACIDADE OPERACIONAL ------------------------------------------
+  
+  contagem_caged_sql <- read_file("./src/sql/ConsultaAbaCaged.sql")
+  
   # 17 - CPF - FUNCIONARIOS EMPREGADOS NA ADMINISTRACAO PUBLICA ------------------------------------------
   
   funcionariosNaAdmPublica_sql <- read_file("./src/sql/ConsultaAbaFuncionariosServidores.sql")
@@ -137,7 +148,7 @@ load_from_sgbd <- function(cnpj){
   cpfSociosNaAdmPublicaParte2_sql <- read_file("./src/sql/ConsultaAbaSociosServidoresParte2.sql")
   
   # XX - EMPENHOS ----------------------------------------------------------------------------------------
-  empenhos_sql <- read_file("./src/sql/ConsultaAbaEmpenhos2.sql")
+  empenhos_sql <- read_file("./src/sql/ConsultaAbaEmpenhos.sql")
   
   # XX - SANCIONADOS -------------------------------------------------------------------------------------
   sancionado_sql <- read_file("./src/sql/ConsultaAbaSancionados.sql")
@@ -153,6 +164,10 @@ load_from_sgbd <- function(cnpj){
   parentesco <- dbGetQuery(con, stri_enc_tonative(parentesco_sql))
   
   func_na_adm_publica <- dbGetQuery(con, stri_enc_tonative(funcionariosNaAdmPublica_sql))
+  
+  capac_operac_rais <- dbGetQuery(con, stri_enc_tonative(contagem_rais_sql))
+  
+  capac_operac_caged <- dbGetQuery(con, stri_enc_tonative(contagem_caged_sql))
   
   dbExecute(con, stri_enc_tonative(cpfSociosNaAdmPublicaParte1_sql), immediate = TRUE)
   socio_org_publico <- dbGetQuery(con, stri_enc_tonative(cpfSociosNaAdmPublicaParte2_sql))
@@ -183,6 +198,9 @@ load_from_sgbd <- function(cnpj){
     format_headers = TRUE,
   )
   
+  # Une as tabelas com capacidade operacional -------------------------------------------------------------
+  capac_operac <- full_join(capac_operac_rais, capac_operac_caged)
+  
   # Retorna lista com as tabelas já convertidas do encoding nativo do SQL Server (latin1) para UTF8 ------
   list(
     parentesco = Corrige_Codificacao_Dataframe(parentesco),
@@ -192,7 +210,8 @@ load_from_sgbd <- function(cnpj){
     cnpjs = Corrige_Codificacao_Dataframe(cnpjs),
     func_na_adm_publica = Corrige_Codificacao_Dataframe(func_na_adm_publica),
     sancionados = Corrige_Codificacao_Dataframe(sancionados),
-    telefones = Corrige_Codificacao_Dataframe(telefones)
+    telefones = Corrige_Codificacao_Dataframe(telefones),
+    capac_operac = Corrige_Codificacao_Dataframe(capac_operac)
     #socio_parentesco <- Corrige_Codificacao_Dataframe(socio_parentesco)
   )
 }
@@ -507,16 +526,17 @@ load_data <- function(data_source){
     filter(TotalValorPago > 0)
   
   a_empenho <- empenhos %>%
-    mutate(start = NA, end = NA) %>%
+    mutate(start = DataInicio, end = DataFim) %>%
     select(from = CnpjUnidadeGestora,
            to = CpfCnpjCredor,
            start, 
            end,
-           valor = TotalValorPago) %>%
+           valor = TotalValorPago,
+           qntd = QntdEmpenhos) %>%
     filter(!is.na(from)) %>%
     filter(!is.na(to)) %>%
     group_by(from, to) %>% 
-    summarise(valor_total = sum(valor, na.rm = T), qntd = n(), start,end) %>% 
+    summarise(valor_total = sum(valor, na.rm = T), qntd, start,end) %>% 
     ungroup() %>% 
     mutate(role = paste0('[', qntd, '] - ',
                          as.character(currency(valor_total,
