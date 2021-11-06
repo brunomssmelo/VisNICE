@@ -61,7 +61,7 @@ shiny::tabsetPanel(id = 'tabset_principal',
                    tabPanel(
                      title = "Destacar elementos do gráfico",
                      fluidRow(
-                       tabBox(
+                       tabBox(id = "tabbox_destaque",
                          width = 12,
                          tabPanel(
                            title = 'Empresas/Órgãos Públicos',
@@ -162,6 +162,8 @@ shiny::tabsetPanel(id = 'tabset_principal',
                              actionButton("btnIncluiTodosSanction",
                                           label = "Selecionar/Excluir Todos"))),
                          materialSwitch("switchTitle", "Exibir título dos nós selecionados",
+                                        value = FALSE, status = "primary", width = '100%'),
+                         materialSwitch("switchSelecao", "Destacar todos os dados da visualização",
                                         value = FALSE, status = "primary", width = '100%')
                        ))),
                    tabPanel(

@@ -2,7 +2,6 @@ visNodesEdges <- reactive({
   graph <- dataos()$graph
   center_nodes <- selected_nodes()
   radius <- ego_radius()
-  #input_nos <- nos_selecionados()
 
   # atualiza filtro temporal de sócio
   filter_start_date(input$sldFiltroTemporal[1])
@@ -159,6 +158,15 @@ output$network_not_auto <- renderVisNetwork({
 })
 
 #Destaca os elementos do gráfico
+observeEvent(input$switchSelecao, {
+  visNetworkProxy("network_auto")%>%
+    visNodes(shadow = TRUE)%>%
+    visEdges(shadow = TRUE)
+  
+  shinyjs::disable("multiSelectNodesPJAba3")
+  
+})
+
 observe({
   vnodes <- visNodesEdges()$vnodes
   vedges <- visNodesEdges()$vedges
@@ -169,7 +177,7 @@ observe({
     mutate(shadow = case_when(
       id %in% nos_select ~ TRUE,
       T ~ FALSE
-    ))
+    ), shadow.size = 30)
   
   if(valor_switch == TRUE){
     nodes <- vnodes %>%
@@ -187,7 +195,7 @@ observe({
       from %in% nos_select ~ TRUE,
       to %in% nos_select ~ TRUE,
       T ~ FALSE
-    ))
+    ), shadow.size = 30)
   
   visNetworkProxy("network_auto") %>%
     visUpdateNodes(nodes = nodes) %>%

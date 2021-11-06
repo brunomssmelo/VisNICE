@@ -35,7 +35,8 @@ dataos <- reactive({
         
         graph_data <- list(
           edges = nice_data$edges,
-          nodes = nice_data$nodes
+          nodes = nice_data$nodes,
+          data = nice_data$data
         )
       },
       error = function(e) {

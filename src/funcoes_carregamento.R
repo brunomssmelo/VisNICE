@@ -17,35 +17,41 @@ load_From_xlsx <- function(data_path){
   
   ws_empenhos <- read_excel(data_path,
                             sheet = "empenhos",
-                            na = 'NULL',
-                            col_types = c(rep("guess", 26)))
+                            na = "NULL",
+                            col_types = rep("guess", 26))
   
   # Worksheet parentesco ############################################################################
   
   ws_parentesco <- read_excel(data_path,
                               sheet = "parentesco",
-                              na = 'NULL',
-                              col_types = c(rep("text",6)))
+                              na = "NULL",
+                              col_types = rep("text",6))
   
   # Worksheet telefones ############################################################################
   
   ws_telefones <- read_excel(data_path,
                              sheet = "telefones",
-                             na = 'NULL',
+                             na = "NULL",
                              col_types = rep("text",4))
   
   # Worksheet func_na_adm_publica ############################################################################
   
   ws_func_na_adm_publica <- read_excel(data_path,
                                        sheet = "func_na_adm_publica",
-                                       na = 'NULL',
+                                       na = "NULL",
                                        col_types = c(rep("text",7), rep("guess", 3)))
   
   # Worksheet sancionados ############################################################################
   ws_sancionado <- read_excel(data_path,
                               sheet = "sancionados",
-                              na = 'NULL',
-                              col_types = rep("text",3))
+                              na = "NULL",
+                              col_types = rep("text",27))
+  
+  # Worksheet socio_org_publico ############################################################################
+  ws_socio_org_publico <- read_excel(data_path,
+                              sheet = "socio_org_publico",
+                              na = "NULL",
+                              col_types = c(rep("text",8), rep("guess",2)))
   
   # Retorna lista com as tabelas já convertidas do encoding nativo do Excel (latin1) para UTF8 -----------
   list(
@@ -54,7 +60,7 @@ load_From_xlsx <- function(data_path){
     empenhos = Corrige_Codificacao_Dataframe(ws_empenhos),
     parentesco = Corrige_Codificacao_Dataframe(ws_parentesco),
     telefones = Corrige_Codificacao_Dataframe(ws_telefones),
-    #socio_org_publico = Corrige_Codificacao_Dataframe(ws_socios_org_publico),
+    socio_org_publico = Corrige_Codificacao_Dataframe(ws_socio_org_publico),
     func_na_adm_publica = Corrige_Codificacao_Dataframe(ws_func_na_adm_publica),
     sancionados = Corrige_Codificacao_Dataframe(ws_sancionado) 
     #socio_parentesco <- Corrige_Codificacao_Dataframe(ws_socio_parentesco)
@@ -210,8 +216,8 @@ load_from_sgbd <- function(cnpj){
     cnpjs = Corrige_Codificacao_Dataframe(cnpjs),
     func_na_adm_publica = Corrige_Codificacao_Dataframe(func_na_adm_publica),
     sancionados = Corrige_Codificacao_Dataframe(sancionados),
-    telefones = Corrige_Codificacao_Dataframe(telefones),
-    capac_operac = Corrige_Codificacao_Dataframe(capac_operac)
+    telefones = Corrige_Codificacao_Dataframe(telefones)
+    #capac_operac = Corrige_Codificacao_Dataframe(capac_operac)
     #socio_parentesco <- Corrige_Codificacao_Dataframe(socio_parentesco)
   )
 }
@@ -249,11 +255,6 @@ load_data <- function(data_source){
     select(id = NUM_CNPJ, title = NOME) %>%
     filter(nchar(id)==14, !duplicated(id)) %>%
     mutate(group = 'PJ_PRIVADO')
-  
-  # v_telefones <- cnpj %>%
-  #   select(id = TEL1, title = TEL1) %>%
-  #   filter(nchar(id)<=11) %>%
-  #   filter(!is.na(id))
   
   v_telefones <- cnpjs %>%
     select(id = TEL2, title = TEL2) %>%
