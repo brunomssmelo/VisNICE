@@ -77,7 +77,7 @@ shiny::shinyUI( function(){
         materialSwitch(
           inputId = "switchChoose",
           label = "Mudar para dados do Banco SQL",
-          value = TRUE,
+          value = FALSE,
           status = "primary",
           width = '100%'
         )),
