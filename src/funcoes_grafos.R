@@ -18,26 +18,17 @@ check_filter_interval <- function(edge_data, filter_start, filter_end, filter_ty
   edge_data$ok
 }
 
-get_role_max_date <- function(graph_data, edge_role){
+get_role_max_date <- function(graph_data, edge_type){
   graph_data$edges %>% 
-    filter(str_detect(role, edge_role)) %>%
+    filter(str_detect(type, edge_type)) %>%
     `$`(end) %>% max(na.rm = T)
 }
 
-get_role_min_date <- function(graph_data, edge_role){
+get_role_min_date <- function(graph_data, edge_type){
   graph_data$edges %>% 
-    filter(str_detect(role, edge_role)) %>%
+    filter(str_detect(type, edge_type)) %>%
     `$`(start) %>% min(na.rm = T)
 }
-
-#Destaca os elementos do gráfico
-# destaca_elementos <- function(node_data, nos_selecionados){
-#   node_data <- node_data %>% 
-#     mutate(shadow = case_when(
-#       id %in% nos_selecionados ~ TRUE,
-#       T ~ FALSE
-#     ))
-# }
 
 ego_graph <- function(graph, order, center_nodes){
   
@@ -69,13 +60,13 @@ build_source_graph <- function(graph_data){
   
   edges <- edges %>%
     mutate(start = as.character(start),
-           end = as.character(end)) %>% 
+           end = as.character(end)) %>%
     mutate(end = case_when(
       !is.na(start) ~ if_else(is.na(end), 'Tempo indefinido', end),
       T ~ end)) %>% 
     mutate(title = case_when(
       !is.na(start) ~ paste0("<p>", role, ":", start, " à ", end, "</p>"),
-      T ~ role)) %>% 
+      T ~ role))%>% 
     mutate(color = case_when(
       type == 'sociedade' ~ 'blue',
       type == 'vinculo_empregaticio' ~ 'purple',
@@ -89,12 +80,6 @@ build_source_graph <- function(graph_data){
       role == 'vermelho'~ paste('<p style=color:red;><strong>Empresa_Sancionada: ', title, "</strong></p>"),
       T ~ title
     ))
-  
-  # nodes <- nodes %>% 
-  #       mutate(shadow = case_when(
-  #         verifica_valores() ~ TRUE,
-  #         T ~ FALSE
-  #       ))
 
   graph <- graph_from_data_frame(d = edges,
                                  directed = TRUE,
@@ -121,11 +106,6 @@ build_source_graph <- function(graph_data){
                        label = c("sócio", "parente", "vinc_servidor", "telefones", "empenhos"), arrows =c("to","to", "to", "to","to"))
   
   list(graph = graph, ledges = ledges, center_nodes = center_nodes, data = data)
-}
-
-verifica_valores <- function(){
-  print(nos_selecionados)
-  return(TRUE)
 }
 
 

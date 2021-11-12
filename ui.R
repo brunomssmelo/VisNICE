@@ -37,9 +37,6 @@ shiny::shinyUI( function(){
                   max = 4, value = 1, width = '100%'),
       bookmarkButton(label = "Salvar para depois", id = "bookmark"),
       tags$head(tags$style(type="text/css", "#bookmark {background-color:#428bca;color: #fff};")),
-      selectInput("selectFocusNode", "Foco no nó :", choices = NULL, width = '100%'),
-      sliderInput("sliderFocusScale", "Escala do foco : ",
-                  min = 1, max = 4, value = 2, width = '100%'),
       div(
              #pickerInput("selectEdges", label = "Exibir Apenas:", choices = list("Socios" = "sociedade", "Parentes" = "parentesco", "Vinculo Empregaticio" = "vinculo_empregaticio"), multiple = TRUE),
              #selectizeInput("op_parentes", label = "Escolha um tipo de Relacionamento:", choices = NULL, multiple = TRUE, width = '100%'),
@@ -80,7 +77,7 @@ shiny::shinyUI( function(){
         materialSwitch(
           inputId = "switchChoose",
           label = "Mudar para dados do Banco SQL",
-          value = TRUE,
+          value = FALSE,
           status = "primary",
           width = '100%'
         )),
@@ -100,9 +97,6 @@ shiny::shinyUI( function(){
         theme = "onenote"
       ),
       # Acrescenta um icone de carregamento
-      fluidRow(column(width = 12, align="right",
-                      bookmarkButton(label = "Salvar para depois"))),
-      br(),
       add_busy_spinner(spin = "fading-circle", color = "blue", timeout = 1000, position = "full-page"),
       source("./src/ui/proxy_viz_ui.R", local = TRUE, encoding = 'UTF-8')$value,
       # source("./src/ui/proxy_data_source_ui.R", local = TRUE, encoding = 'UTF-8')$value,

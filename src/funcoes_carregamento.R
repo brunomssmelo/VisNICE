@@ -17,35 +17,41 @@ load_From_xlsx <- function(data_path){
   
   ws_empenhos <- read_excel(data_path,
                             sheet = "empenhos",
-                            na = 'NULL',
-                            col_types = c(rep("guess", 26)))
+                            na = "NULL",
+                            col_types = rep("guess", 26))
   
   # Worksheet parentesco ############################################################################
   
   ws_parentesco <- read_excel(data_path,
                               sheet = "parentesco",
-                              na = 'NULL',
-                              col_types = c(rep("text",6)))
+                              na = "NULL",
+                              col_types = rep("text",6))
   
   # Worksheet telefones ############################################################################
   
   ws_telefones <- read_excel(data_path,
                              sheet = "telefones",
-                             na = 'NULL',
+                             na = "NULL",
                              col_types = rep("text",4))
   
   # Worksheet func_na_adm_publica ############################################################################
   
   ws_func_na_adm_publica <- read_excel(data_path,
                                        sheet = "func_na_adm_publica",
-                                       na = 'NULL',
+                                       na = "NULL",
                                        col_types = c(rep("text",7), rep("guess", 3)))
   
   # Worksheet sancionados ############################################################################
   ws_sancionado <- read_excel(data_path,
                               sheet = "sancionados",
-                              na = 'NULL',
-                              col_types = rep("text",3))
+                              na = "NULL",
+                              col_types = rep("text",27))
+  
+  # Worksheet socio_org_publico ############################################################################
+  ws_socio_org_publico <- read_excel(data_path,
+                              sheet = "socio_org_publico",
+                              na = "NULL",
+                              col_types = c(rep("text",8), rep("guess",2)))
   
   # Retorna lista com as tabelas já convertidas do encoding nativo do Excel (latin1) para UTF8 -----------
   list(
@@ -54,7 +60,7 @@ load_From_xlsx <- function(data_path){
     empenhos = Corrige_Codificacao_Dataframe(ws_empenhos),
     parentesco = Corrige_Codificacao_Dataframe(ws_parentesco),
     telefones = Corrige_Codificacao_Dataframe(ws_telefones),
-    #socio_org_publico = Corrige_Codificacao_Dataframe(ws_socios_org_publico),
+    socio_org_publico = Corrige_Codificacao_Dataframe(ws_socio_org_publico),
     func_na_adm_publica = Corrige_Codificacao_Dataframe(ws_func_na_adm_publica),
     sancionados = Corrige_Codificacao_Dataframe(ws_sancionado) 
     #socio_parentesco <- Corrige_Codificacao_Dataframe(ws_socio_parentesco)
@@ -64,6 +70,9 @@ load_From_xlsx <- function(data_path){
 
 
 load_from_sgbd <- function(cnpj){
+  library(stringi)
+  library(readxl)
+  library(dplyr)
   # Abertura de conexao com o SQL SERVER -----------------------------------------------------------------
   tryCatch({
     con <- dbConnect(odbc(),
@@ -127,6 +136,14 @@ load_from_sgbd <- function(cnpj){
   
   SocioParentesco_sql <- read_file("./src/sql/ConsultaAbaSocioParente.sql")
   
+  # 10 - RAIS - CAPACIDADE OPERACIONAL ------------------------------------------
+  
+  contagem_rais_sql <- read_file("./src/sql/ConsultaAbaRais.sql")
+  
+  # 12 - CAGED - CAPACIDADE OPERACIONAL ------------------------------------------
+  
+  contagem_caged_sql <- read_file("./src/sql/ConsultaAbaCaged.sql")
+  
   # 17 - CPF - FUNCIONARIOS EMPREGADOS NA ADMINISTRACAO PUBLICA ------------------------------------------
   
   funcionariosNaAdmPublica_sql <- read_file("./src/sql/ConsultaAbaFuncionariosServidores.sql")
@@ -137,7 +154,7 @@ load_from_sgbd <- function(cnpj){
   cpfSociosNaAdmPublicaParte2_sql <- read_file("./src/sql/ConsultaAbaSociosServidoresParte2.sql")
   
   # XX - EMPENHOS ----------------------------------------------------------------------------------------
-  empenhos_sql <- read_file("./src/sql/ConsultaAbaEmpenhos2.sql")
+  empenhos_sql <- read_file("./src/sql/ConsultaAbaEmpenhos.sql")
   
   # XX - SANCIONADOS -------------------------------------------------------------------------------------
   sancionado_sql <- read_file("./src/sql/ConsultaAbaSancionados.sql")
@@ -153,6 +170,10 @@ load_from_sgbd <- function(cnpj){
   parentesco <- dbGetQuery(con, stri_enc_tonative(parentesco_sql))
   
   func_na_adm_publica <- dbGetQuery(con, stri_enc_tonative(funcionariosNaAdmPublica_sql))
+  
+  capac_operac_rais <- dbGetQuery(con, stri_enc_tonative(contagem_rais_sql))
+  
+  capac_operac_caged <- dbGetQuery(con, stri_enc_tonative(contagem_caged_sql))
   
   dbExecute(con, stri_enc_tonative(cpfSociosNaAdmPublicaParte1_sql), immediate = TRUE)
   socio_org_publico <- dbGetQuery(con, stri_enc_tonative(cpfSociosNaAdmPublicaParte2_sql))
@@ -183,6 +204,9 @@ load_from_sgbd <- function(cnpj){
     format_headers = TRUE,
   )
   
+  # Une as tabelas com capacidade operacional -------------------------------------------------------------
+  capac_operac <- full_join(capac_operac_rais, capac_operac_caged)
+  
   # Retorna lista com as tabelas já convertidas do encoding nativo do SQL Server (latin1) para UTF8 ------
   list(
     parentesco = Corrige_Codificacao_Dataframe(parentesco),
@@ -193,6 +217,7 @@ load_from_sgbd <- function(cnpj){
     func_na_adm_publica = Corrige_Codificacao_Dataframe(func_na_adm_publica),
     sancionados = Corrige_Codificacao_Dataframe(sancionados),
     telefones = Corrige_Codificacao_Dataframe(telefones)
+    #capac_operac = Corrige_Codificacao_Dataframe(capac_operac)
     #socio_parentesco <- Corrige_Codificacao_Dataframe(socio_parentesco)
   )
 }
@@ -230,11 +255,6 @@ load_data <- function(data_source){
     select(id = NUM_CNPJ, title = NOME) %>%
     filter(nchar(id)==14, !duplicated(id)) %>%
     mutate(group = 'PJ_PRIVADO')
-  
-  # v_telefones <- cnpj %>%
-  #   select(id = TEL1, title = TEL1) %>%
-  #   filter(nchar(id)<=11) %>%
-  #   filter(!is.na(id))
   
   v_telefones <- cnpjs %>%
     select(id = TEL2, title = TEL2) %>%
@@ -507,16 +527,17 @@ load_data <- function(data_source){
     filter(TotalValorPago > 0)
   
   a_empenho <- empenhos %>%
-    mutate(start = NA, end = NA) %>%
+    mutate(start = DataInicio, end = DataFim) %>%
     select(from = CnpjUnidadeGestora,
            to = CpfCnpjCredor,
            start, 
            end,
-           valor = TotalValorPago) %>%
+           valor = TotalValorPago,
+           qntd = QntdEmpenhos) %>%
     filter(!is.na(from)) %>%
     filter(!is.na(to)) %>%
     group_by(from, to) %>% 
-    summarise(valor_total = sum(valor, na.rm = T), qntd = n(), start,end) %>% 
+    summarise(valor_total = sum(valor, na.rm = T), qntd, start,end) %>% 
     ungroup() %>% 
     mutate(role = paste0('[', qntd, '] - ',
                          as.character(currency(valor_total,
