@@ -15,7 +15,6 @@ visNodesEdges <- reactive({
   filter_start_date_emp(input$sldFiltroTemporalEmpenhos[1])
   filter_end_date_emp(input$sldFiltroTemporalEmpenhos[2])
   
-  
   if(is.null(center_nodes))
     center_nodes <- dataos()$center_nodes
   
@@ -46,6 +45,7 @@ visNodesEdges <- reactive({
   if(!is.null(input$op_parentes)){
   
     op_parentes <- input$op_parentes
+    
     vedges <- vedges %>%
       filter(role %in% op_parentes | type != 'parentesco') %>%
       unique()
@@ -61,20 +61,25 @@ visNodesEdges <- reactive({
     filter((id %in% vedges$from) | (id %in% vedges$to)) %>%
     unique()
   
+  #Seleciona apenas as relacoes presentes na visualizacao
+  #if (is.null(input$op_parentes)){
   parentesco_selecionados <- vedges %>%
     filter(type == 'parentesco') %>%
     select(role) %>%
     unlist() %>%
     unique()
-  
+  #}
+
   todos_parentesco <- graph_edges %>%
     filter(type == 'parentesco') %>%
     select(role) %>%
     unlist() %>%
     unique()
-  
+
   updateSelectizeInput(session, "op_parentes",
                        choices = todos_parentesco, selected = parentesco_selecionados)
+  
+  #print(input$op_parentes)
   
   list(vnodes = vnodes, vedges = vedges)
 })
@@ -159,12 +164,16 @@ output$network_not_auto <- renderVisNetwork({
 
 #Destaca os elementos do gráfico
 observeEvent(input$switchSelecao, {
-  visNetworkProxy("network_auto")%>%
+  if(input$switchSelecao == TRUE){
+     visNetworkProxy("network_auto")%>%
     visNodes(shadow = TRUE)%>%
     visEdges(shadow = TRUE)
-  
-  shinyjs::disable("multiSelectNodesPJAba3")
-  
+  } else {
+    visNetworkProxy("network_auto")%>%
+      visNodes(shadow = FALSE)%>%
+      visEdges(shadow = FALSE)
+  }
+ 
 })
 
 observe({
@@ -173,11 +182,14 @@ observe({
   nos_select <- nos_selecionados()
   valor_switch <- input$switchTitle
   
-  nodes <- vnodes %>%
+  if(input$switchSelecao == FALSE){
+    if(!is.null(nos_select)){
+      
+    nodes <- vnodes %>%
     mutate(shadow = case_when(
       id %in% nos_select ~ TRUE,
       T ~ FALSE
-    ), shadow.size = 30)
+    ), shadow.size = 100)
   
   if(valor_switch == TRUE){
     nodes <- vnodes %>%
@@ -185,6 +197,8 @@ observe({
       mutate(label = case_when(
         id %in% nos_select ~ title
       ))
+    }
+   
   } else {
     nodes <- vnodes %>%
       mutate(font.size = 0)
@@ -195,11 +209,15 @@ observe({
       from %in% nos_select ~ TRUE,
       to %in% nos_select ~ TRUE,
       T ~ FALSE
-    ), shadow.size = 30)
+    ), shadow.size = 100)
   
   visNetworkProxy("network_auto") %>%
     visUpdateNodes(nodes = nodes) %>%
     visUpdateEdges(edges = edges)
+  } else {
+    # show_alert("Por favor desligue o botão: destacar todos!")
+  }
+  
 })
 
 observe({
@@ -229,67 +247,38 @@ observe({
                        max = as.Date(data_end_date_emp()),
                        start = as.Date(filter_start_date_emp()),
                        end = as.Date(max_emp))
-  
-    #sincroniza os filtros temporais
-  # if(!is.null(input$sincronizar_serv)){
-  #   Sincroniza_Dados(input$tab_filtros,input$sldFiltroTemporalServ[1],
-  #                    input$sldFiltroTemporalServ[2])
-  # }
-  # if(!is.null(input$sincronizar_socio)){
-  #   Sincroniza_Dados(input$tab_filtros,input$sldFiltroTemporal[1],
-  #                    input$sldFiltroTemporal[2])
-  # }
-  # if(!is.null(input$sincronizar_emp)){
-  #   Sincroniza_Dados(input$tab_filtros,input$sldFiltroTemporalEmpenhos[1],
-  #                    input$sldFiltroTemporalEmpenhos[2])
-  # }
-  
 })
 
-# Sincroniza_Dados <- function(tab_selected,data1,data2){
-#   if(tab_selected == 'tab_servidor'){
-#     data_start_sinc <- data1
-#     data_end_sinc <- data2
-#     updateDateRangeInput(session, 'sldFiltroTemporal',
-#                          min = as.Date(data_start_date()),
-#                          max = as.Date(data_end_date()),
-#                          start = as.Date(data_start_sinc),
-#                          end = as.Date(data_end_sinc))
-#     updateDateRangeInput(session, 'sldFiltroTemporalEmpenhos',
-#                          min = as.Date(data_start_date()),
-#                          max = as.Date(data_end_date()),
-#                          start = as.Date(data_start_sinc),
-#                          end = as.Date(data_end_sinc))
-#   }
-#   if(tab_selected == 'tab_socio'){
-#     data_start_sinc <- data1
-#     data_end_sinc <- data2
-#     updateDateRangeInput(session, 'sldFiltroTemporalServ',
-#                          min = as.Date(data_start_date()),
-#                          max = as.Date(data_end_date()),
-#                          start = as.Date(data_start_sinc),
-#                          end = as.Date(data_end_sinc))
-#     updateDateRangeInput(session, 'sldFiltroTemporalEmpenhos',
-#                          min = as.Date(data_start_date()),
-#                          max = as.Date(data_end_date()),
-#                          start = as.Date(data_start_sinc),
-#                          end = as.Date(data_end_sinc))
-#   }
-#   if(tab_selected == 'tab_empenho'){
-#     data_start_sinc <- data1
-#     data_end_sinc <- data2
-#     updateDateRangeInput(session, 'sldFiltroTemporalServ',
-#                          min = as.Date(data_start_date()),
-#                          max = as.Date(data_end_date()),
-#                          start = as.Date(data_start_sinc),
-#                          end = as.Date(data_end_sinc))
-#     updateDateRangeInput(session, 'sldFiltroTemporal',
-#                          min = as.Date(data_start_date()),
-#                          max = as.Date(data_end_date()),
-#                          start = as.Date(data_start_sinc),
-#                          end = as.Date(data_end_sinc))
-#   }
-# }
+# Sincroniza todos os filtros temporais
+ observeEvent(c(input$sincronizar_serv,input$sincronizar_socio, input$sincronizar_emp),ignoreInit = T,{
+   switch (input$tab_filtros,
+               'tab_servidor' = mesmo_valor <- input$sldFiltroTemporalServ,
+               'tab_socio' = mesmo_valor <- input$sldFiltroTemporal,
+               'tab_empenho' = mesmo_valor <- input$sldFiltroTemporalEmpenhos
+             )
+   #tratamento de exceções do filtro
+   # if(mesmo_valor[1] < data_start_date_emp()){
+   #   emp <- data_start_date_emp()
+   # }else{
+   #   emp <- mesmo_valor[1]
+   # }
+   
+   updateDateRangeInput(session, 'sldFiltroTemporalServ',
+                                                 min = as.Date(data_start_date_serv()),
+                                                 max = as.Date(data_end_date_serv()),
+                                                 start = as.Date(mesmo_valor[1]),
+                                                 end = as.Date(mesmo_valor[2]))
+    updateDateRangeInput(session, 'sldFiltroTemporal',
+                                                 min = as.Date(data_start_date()),
+                                                 max = as.Date(data_end_date()),
+                                                 start = as.Date(mesmo_valor[1]),
+                                                 end = as.Date(mesmo_valor[2]))
+    updateDateRangeInput(session, 'sldFiltroTemporalEmpenhos',
+                                                 min = as.Date(data_start_date_emp()),
+                                                 max = as.Date(data_end_date_emp()),
+                                                 start = as.Date(mesmo_valor[1]),
+                                                 end = as.Date(mesmo_valor[2]))
+ })
 
 output$tblPjDetalhes <- renderDT({
   

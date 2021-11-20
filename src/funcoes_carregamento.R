@@ -5,53 +5,45 @@ load_From_xlsx <- function(data_path){
   # Worksheet cnpjs ###################################################################################
   
   ws_cnpj <- read_excel(data_path,
-                        sheet = "cnpjs",
-                        col_types = c("text", rep("guess", 25)))
+                        sheet = "cnpjs")
   
   # Worksheet socios ##################################################################################
   ws_socios <- read_excel(data_path,
-                       sheet = "socios",
-                       col_types = c(rep("text",6), rep("guess", 3)))
+                       sheet = "socios")
   
   # Worksheet empenhos ##################################################################################
   
   ws_empenhos <- read_excel(data_path,
                             sheet = "empenhos",
-                            na = "NULL",
-                            col_types = rep("guess", 26))
+                            na = "NULL")
   
   # Worksheet parentesco ############################################################################
   
   ws_parentesco <- read_excel(data_path,
                               sheet = "parentesco",
-                              na = "NULL",
-                              col_types = rep("text",6))
+                              na = "NULL")
   
   # Worksheet telefones ############################################################################
   
   ws_telefones <- read_excel(data_path,
                              sheet = "telefones",
-                             na = "NULL",
-                             col_types = rep("text",4))
+                             na = "NULL")
   
   # Worksheet func_na_adm_publica ############################################################################
   
   ws_func_na_adm_publica <- read_excel(data_path,
                                        sheet = "func_na_adm_publica",
-                                       na = "NULL",
-                                       col_types = c(rep("text",7), rep("guess", 3)))
+                                       na = "NULL")
   
   # Worksheet sancionados ############################################################################
   ws_sancionado <- read_excel(data_path,
                               sheet = "sancionados",
-                              na = "NULL",
-                              col_types = rep("text",27))
+                              na = "NULL")
   
   # Worksheet socio_org_publico ############################################################################
   ws_socio_org_publico <- read_excel(data_path,
                               sheet = "socio_org_publico",
-                              na = "NULL",
-                              col_types = c(rep("text",8), rep("guess",2)))
+                              na = "NULL")
   
   # Retorna lista com as tabelas já convertidas do encoding nativo do Excel (latin1) para UTF8 -----------
   list(
@@ -77,7 +69,7 @@ load_from_sgbd <- function(cnpj){
   tryCatch({
     con <- dbConnect(odbc(),
                      Driver = "SQL Server",
-                     Server = "TCERJVM48",
+                     Server = "TCERJVM225\\NI01",
                      Trusted_Connection = "True",
                      database ="DGI_CONSULTA" )
     message("Conectado")
@@ -169,7 +161,13 @@ load_from_sgbd <- function(cnpj){
   
   parentesco <- dbGetQuery(con, stri_enc_tonative(parentesco_sql))
   
+  tryCatch({
   func_na_adm_publica <- dbGetQuery(con, stri_enc_tonative(funcionariosNaAdmPublica_sql))
+    message("Carregando...")
+  }, error = function(e){
+    message("Nao foi possivel conectar ao Banco")
+  })
+  
   
   capac_operac_rais <- dbGetQuery(con, stri_enc_tonative(contagem_rais_sql))
   
@@ -566,49 +564,51 @@ load_data <- function(data_source){
     bind_rows(v_unidade_gestora)
   
   # Tabela "sancionados" ---------------------------------------------------------------------------------------
-  
+  # Ler arquivo que contém os cnpjs do orgao sancionador
+   # df_cnpj_publico <- read_rds('./dados/df_cnpj_publico.rds')
+  # 
   sancionados <- data$sancionados
-  
+  # 
   sancionados <- sancionados %>% mutate(TipoPessoa = case_when(
     str_detect(TipoPessoa, 'J')~"PJ_PRIVADO",
     str_detect(TipoPessoa,'F')~"PF",
     T~"PJ"
   )) %>% mutate(CpfCnpjSancionado = as.character( CpfCnpjSancionado ))
   
+  # # Procurar numero de cnpj do orgao sancionador e cria nova coluna com cnpjs
+  # dummy <- sancionados %>%
+  #   stringdist_join(df_cnpj_publico, by = c(OrgaoSancionador = "NOME_EMPRESARIAL"),  method = "osa", mode = "left", max_dist = 2, ignore_case = TRUE)
+  # 
+  # a_sancionados <- sancionados %>%
+  #   select(from = CnpjSancao,
+  #          to = CpfCnpjSancionado,
+  #          start = DataInicioSancao,
+  #          end = DataFimSancao,
+  #          type = "sancao")
+  #  
   # v_empresa_sancionada <- sancionados %>%
   #   select(id = CpfCnpjSancionado, title = NomeOrgaoSancionador) %>%
   #   filter(!is.na(id)) %>%
-  #   mutate(group = "PJ_PRIVADO") %>%
+  #   mutate(group = TipoPessoa) %>%
   #   filter(!duplicated(id)) %>%
   #   left_join(select(vertices, id), by ='id')
   # 
+  #   v_orgao_sancionador <- sancionados %>%
+  #     select(id = join_cnpj, title = OrgaoSancionador) %>%
+  #     filter(!duplicated(id)) %>%
+  #     left_join(select(vertices, id), by = 'id')
+  #  
   # vertices <- vertices %>%
-  #   bind_rows(v_empresa_sancionada)
+  #   bind_rows(v_empresa_sancionada) %>%
+  #   bind_rows(v_orgao_sancionador)
   
-  # a_sancionados <- sancionados %>%
-  #   mutate(start = NA, end = NA) %>%
-  #   select(from = CnpjUnidadeGestora,
-  #          to = C,
-  #          start, 
-  #          end,
-  #          valor = TotalValorPago)
   #Verificacao se o cnpj informado e sancionado e mudanca da coloracao para vermelho
-  vertices <- vertices %>%
-    mutate(role = case_when(
-      id %in% sancionados$CpfCnpjSancionado ~ 'vermelho',
-      group == 'TEL' ~ 'telefones'
-    ))
-  
-  # v_cnpj_sancionado <- sancionados %>%
-  #   select(id = CPF.OU.CNPJ.DO.SANCIONADO, title= NOME.INFORMADO.PELO.ORGAO.SANCIONADOR) %>%
-  #   filter(!is.na(id)) %>%
-  #   mutate(group = 'PJ_PRIVADO')%>%
-  #   filter(!duplicated(id))%>%
-  #   left_join(select(vertices, id), by='id')
-  # 
   # vertices <- vertices %>%
-  #   bind_rows(v_cnpj_sancionado)
-  # 
+  #   mutate(role = case_when(
+  #     id %in% sancionados$CpfCnpjSancionado ~ 'vermelho',
+  #     group == 'TEL' ~ 'telefones'
+  #   ))
+  
   # Worksheet "9_Socio_Parentesco" 
   
   # socio_parentesco <- socio_parentesco%>%

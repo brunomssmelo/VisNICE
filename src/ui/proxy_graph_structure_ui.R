@@ -39,8 +39,9 @@ shiny::tabsetPanel(id = 'tabset_principal',
                            column(
                              width = 12,
                              align="center",
-                             actionButton("btnIncluiTodosPJ",
-                                          label = "Selecionar/Excluir Todos"))),
+                             actionButton("btnExcluiTodosPJ",
+                                          label = "Excluir Todos"),
+                             tags$head(tags$style(type="text/css", "#btnExcluiTodosPJ {background-color:#428bca;color: #fff};")))),
                          tabPanel(
                            title = 'Pessoas Físicas',
                            column(
@@ -56,8 +57,9 @@ shiny::tabsetPanel(id = 'tabset_principal',
                            column(
                              width = 12,
                              align="center",
-                             actionButton("btnIncluiTodosPF",
-                                          label = "Selecionar/Excluir Todos")))))),
+                             actionButton("btnExcluiTodosPF",
+                                          label = "Excluir Todos"),
+                             tags$head(tags$style(type="text/css", "#btnExcluiTodosPF {background-color:#428bca;color: #fff};"))))))),
                    tabPanel(
                      title = "Destacar elementos do gráfico",
                      fluidRow(
@@ -78,8 +80,9 @@ shiny::tabsetPanel(id = 'tabset_principal',
                            column(
                              width = 12,
                              align="center",
-                             actionButton("btnIncluiTodosPJ",
-                                          label = "Selecionar/Excluir Todos"))),
+                             actionButton("btnIncluiTodosPJAba3",
+                                          label = "Selecionar/Excluir Todos"),
+                             tags$head(tags$style(type="text/css", "#btnIncluiTodosPJAba3 {background-color:#428bca;color: #fff};")))),
                          tabPanel(
                            title = 'Pessoas Físicas',
                            column(
@@ -95,8 +98,9 @@ shiny::tabsetPanel(id = 'tabset_principal',
                            column(
                              width = 12,
                              align="center",
-                             actionButton("btnIncluiTodosPF",
-                                          label = "Selecionar/Excluir Todos"))),
+                             actionButton("btnIncluiTodosPFAba3",
+                                          label = "Selecionar/Excluir Todos"),
+                             tags$head(tags$style(type="text/css", "#btnIncluiTodosPFAba3 {background-color:#428bca;color: #fff};")))),
                          tabPanel(
                            title = 'Parentesco',
                            column(
@@ -112,7 +116,8 @@ shiny::tabsetPanel(id = 'tabset_principal',
                              width = 12,
                              align="center",
                              actionButton("btnIncluiTodosParentes",
-                                          label = "Selecionar/Excluir Todos"))),
+                                          label = "Selecionar/Excluir Todos"),
+                             tags$head(tags$style(type="text/css", "#btnIncluiTodosParentes {background-color:#428bca;color: #fff};")))),
                          tabPanel(
                            title = 'Vínculos Empregatícios',
                            column(
@@ -128,7 +133,8 @@ shiny::tabsetPanel(id = 'tabset_principal',
                              width = 12,
                              align="center",
                              actionButton("btnIncluiTodosEmployment",
-                                          label = "Selecionar/Excluir Todos"))),
+                                          label = "Selecionar/Excluir Todos"),
+                             tags$head(tags$style(type="text/css", "#btnIncluiTodosEmployment {background-color:#428bca;color: #fff};")))),
                          tabPanel(
                            title = 'Empenhos',
                            column(
@@ -144,7 +150,8 @@ shiny::tabsetPanel(id = 'tabset_principal',
                              width = 12,
                              align="center",
                              actionButton("btnIncluiTodosCommitment",
-                                          label = "Selecionar/Excluir Todos"))),
+                                          label = "Selecionar/Excluir Todos"),
+                             tags$head(tags$style(type="text/css", "#btnIncluiTodosCommitment {background-color:#428bca;color: #fff};")))),
                          tabPanel(
                            title = 'Sanções',
                            column(
@@ -160,7 +167,8 @@ shiny::tabsetPanel(id = 'tabset_principal',
                              width = 12,
                              align="center",
                              actionButton("btnIncluiTodosSanction",
-                                          label = "Selecionar/Excluir Todos"))),
+                                          label = "Selecionar/Excluir Todos"),
+                             tags$head(tags$style(type="text/css", "#btnIncluiTodosSanction {background-color:#428bca;color: #fff};")))),
                          materialSwitch("switchTitle", "Exibir título dos nós selecionados",
                                         value = FALSE, status = "primary", width = '100%'),
                          materialSwitch("switchSelecao", "Destacar todos os dados da visualização",

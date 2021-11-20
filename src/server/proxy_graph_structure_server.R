@@ -1,4 +1,4 @@
-Popula_Multi_Input <- function(tipo, nome_input){
+Popula_Multi_Input <- function(tipo, nome_input, btn){
   
   vnodes <- visNodesEdges()$vnodes
   vedges <- visNodesEdges()$vedges
@@ -13,6 +13,11 @@ Popula_Multi_Input <- function(tipo, nome_input){
     
     updateMultiInput(session, nome_input,
                      choices = choices_data, selected = NULL)
+    
+    if(btn %% 2 > 0){
+      updateMultiInput(session, nome_input,
+                       choices = choices_data, selected = choices_data)
+    }
   } else {
   
   nodes_data <- vedges %>%
@@ -31,6 +36,10 @@ Popula_Multi_Input <- function(tipo, nome_input){
   
   updateMultiInput(session, nome_input,
                    choices = choices_data)
+    if(btn %% 2 > 0){
+      updateMultiInput(session, nome_input,
+                       choices = choices_data, selected = choices_data)
+    }
   }
   
 }
@@ -83,26 +92,26 @@ observe({
   Seleciona_Dados(selected_data_pj, "multiSelectNodesPJ", "PJ")
   Seleciona_Dados(selected_data_pf, "multiSelectNodesPF", "PF")
 
-  if(input$btnIncluiTodosPJ %%2 > 0){
-    updateMultiInput(session, "multiSelectNodesPJ",
-                      selected = choices_pj)
-  }
-  
-  if(input$btnIncluiTodosPF %%2 > 0){
-    updateMultiInput(session, "multiSelectNodesPF",
-                      selected = choices_pf)
-  }
+  verifica_botoes(input$btnExcluiTodosPJ, "multiSelectNodesPJ")
+  verifica_botoes(input$btnExcluiTodosPF, "multiSelectNodesPF")
   
 })
+
+verifica_botoes <- function(btn, multi){
+  if(btn > 0){
+    updateMultiInput(session, multi,
+                     selected = character(0))
+  }
+}
 
 observe({
 
   tryCatch({
-  Popula_Multi_Input('PF', 'multiSelectNodesPFAba3')
-  Popula_Multi_Input('PJ','multiSelectNodesPJAba3')
-  Popula_Multi_Input('parentesco','multiSelectEdgesParentes')
-  Popula_Multi_Input('empenho','multiSelectEdgesCommitment')
-  Popula_Multi_Input('vinculo_empregaticio','multiSelectEdgesEmployment')
+  Popula_Multi_Input('PF', 'multiSelectNodesPFAba3', input$btnIncluiTodosPFAba3)
+  Popula_Multi_Input('PJ','multiSelectNodesPJAba3', input$btnIncluiTodosPJAba3)
+  Popula_Multi_Input('parentesco','multiSelectEdgesParentes', input$btnIncluiTodosParentes)
+  Popula_Multi_Input('empenho','multiSelectEdgesCommitment', input$btnIncluiTodosCommitment)
+  Popula_Multi_Input('vinculo_empregaticio','multiSelectEdgesEmployment', input$btnIncluiTodosEmployment)
   }, error = function(e){
     message("Não há dados presentes na visualização")
   })
@@ -112,6 +121,8 @@ observe({
 observe({
     selected <- c(input$multiSelectNodesPJ,
                   input$multiSelectNodesPF)
+    
+    #print(selected)
     # atualiza raio de vizinhanca
     ego_radius(input$sldRaioVizinhanca)
     
@@ -131,8 +142,6 @@ observeEvent(input$network_auto_graphChange, {
       data.frame(id = input$network_auto_graphChange$id,
                  stringsAsFactors = F)
     )
-    
-    #visNodesEdges()$vnodes = temp
     
   }
 })
@@ -179,6 +188,5 @@ output$btnDownload <- downloadHandler(
 onRestored(function(state){
   updateMultiInput(session, "multiSelectNodesPF", selected = state$input$multiSelectNodesPF)
   updateMultiInput(session, "multiSelectNodesPJ", selected = state$input$multiSelectNodesPJ)
-  updateSelectInput(session, "selectFocusNode", selected = state$input$selectFocusNode)
   updateSelectizeInput(session, "op_parentes", selected = state$input$op_parentes)
 })

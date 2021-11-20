@@ -63,10 +63,10 @@ build_source_graph <- function(graph_data){
            end = as.character(end)) %>%
     mutate(end = case_when(
       !is.na(start) ~ if_else(is.na(end), 'Tempo indefinido', end),
-      T ~ end)) %>% 
+      T ~ end)) %>% # adicionar  no titulo
     mutate(title = case_when(
-      !is.na(start) ~ paste0("<p>", role, ":", start, " à ", end, "</p>"),
-      T ~ role))%>% 
+      !is.na(start) & type != 'empenho' ~ paste0("<p>", role, ":", start, " à ", end, "</p>"),
+      T ~ role))%>%
     mutate(color = case_when(
       type == 'sociedade' ~ 'blue',
       type == 'vinculo_empregaticio' ~ 'purple',
