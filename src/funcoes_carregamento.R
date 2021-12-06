@@ -82,10 +82,12 @@ load_from_sgbd <- function(cnpj){
   
   # Criação a tabela temporária #CNPJ_RAIZ  --------------------------------------------------------------
   
-  dbExecute(con, "CREATE TABLE #CNPJ_RAIZ (CNPJ VARCHAR(20))", immediate = TRUE)
+  dbExecute(con, "DROP TABLE IF EXISTS tempdb.dbo.#CNPJ_RAIZ
+
+CREATE TABLE #CNPJ_RAIZ (CNPJ VARCHAR(20))", immediate = TRUE)
   
   if(is.null(cnpj)){
-    cnpj <- c('09060537', '02812740', '25195543', '07028841','05769219')
+    cnpj <- c('09060537')
   }
   
   # Retira espaços das strings contidas em cnpj
@@ -97,16 +99,15 @@ load_from_sgbd <- function(cnpj){
   # Cria script de inserção dos cnpjs investigados na tabela temporária #CNPJ_RAIZ
   script_cnpj <- paste0("INSERT INTO #CNPJ_RAIZ VALUES ", paste0("('", cnpj, "')", collapse = ','))
   
-  
   dbExecute(con, script_cnpj)
   
   ### criando a tabela temporária #CNPJ
-  dbExecute(con,"CREATE TABLE #CNPJ (CNPJ VARCHAR(20))", immediate = TRUE)
+  dbExecute(con,"DROP TABLE IF EXISTS tempdb.dbo.#CNPJ
+            CREATE TABLE #CNPJ (CNPJ VARCHAR(20))", immediate = TRUE)
   
   dbExecute(con,"INSERT INTO #CNPJ SELECT NUM_CNPJ
                FROM DGI_CONSULTA.IMPORTADO.CNPJ
                WHERE NUM_CNPJ_RAIZ IN (SELECT CNPJ FROM #CNPJ_RAIZ)")
-  
   
   # 01 - CNPJ - (CADASTRO NACIONAL DE PESSOA JURIDICA) / CNPJ - RELACAO DE MATRIZ E FILIAL  --------------
   
@@ -152,7 +153,6 @@ load_from_sgbd <- function(cnpj){
   sancionado_sql <- read_file("./src/sql/ConsultaAbaSancionados.sql")
   
   # Execução das Consultas -------------------------------------------------------------------------------
-  
   cnpjs <- dbGetQuery(con, stri_enc_tonative(cnpj_sql))
   
   telefones <- dbGetQuery(con, stri_enc_tonative(telefones_sql))
@@ -161,13 +161,7 @@ load_from_sgbd <- function(cnpj){
   
   parentesco <- dbGetQuery(con, stri_enc_tonative(parentesco_sql))
   
-  tryCatch({
   func_na_adm_publica <- dbGetQuery(con, stri_enc_tonative(funcionariosNaAdmPublica_sql))
-    message("Carregando...")
-  }, error = function(e){
-    message("Nao foi possivel conectar ao Banco")
-  })
-  
   
   capac_operac_rais <- dbGetQuery(con, stri_enc_tonative(contagem_rais_sql))
   
@@ -270,7 +264,7 @@ load_data <- function(data_source){
     filter(!duplicated(id))
   
   a_tel_cnpj <- cnpjs %>%
-    mutate(start = NA, end = NA) %>%
+    mutate(start = as.character(NA), end = as.character(NA)) %>%
     select(from = NUM_CNPJ,
            to = TEL1,
            start, end) %>%
@@ -306,7 +300,7 @@ load_data <- function(data_source){
     left_join(select(vertices, id), by='id')
   
   a_tel_empresa <- telefones %>%
-    mutate(start = NA, end = NA) %>%
+    mutate(start = as.character(NA), end = as.character(NA)) %>%
     select(from = NUM_CNPJ,
            to = TELEFONE,
            start, end)%>%
@@ -323,18 +317,17 @@ load_data <- function(data_source){
   
   socios <- data$socios
   
-  company_name_to_id <- socios$NUM_CNPJ_EMPRESA %>% 
-    `names<-`(socios$NOME_SOCIO)
+  # company_name_to_id <- socios$NUM_CNPJ_EMPRESA %>% 
+  #   `names<-`(socios$NOME_SOCIO)
   
   socios <- socios %>% 
     mutate(NUM_CNPJ_EMPRESA = str_pad(NUM_CNPJ_EMPRESA, pad = '0', side = 'left', width = 14)) %>% 
-    mutate(NUM_CPF = case_when(
-      nchar(NUM_CPF) > 11 ~ str_pad(NUM_CPF, pad = '0', side = 'left', width = 14),
-      is.na(NUM_CPF) ~ company_name_to_id[NOME_SOCIO],
-      T ~ str_pad(NUM_CPF, pad = '0', side = 'left', width = 11)))
+    mutate(ID_SOCIO = case_when(
+      nchar(ID_SOCIO) > 11 ~ str_pad(ID_SOCIO, pad = '0', side = 'left', width = 14),
+      T ~ str_pad(ID_SOCIO, pad = '0', side = 'left', width = 11)))
   
   a_socio <- socios %>% 
-    select(from = NUM_CPF,
+    select(from = ID_SOCIO,
            to = NUM_CNPJ_EMPRESA,
            start = DATA_ENTRADA_SOCIEDADE,
            end = DATA_DE_EXCLUSAO_NA_SOCIEDADE) %>% 
@@ -344,7 +337,7 @@ load_data <- function(data_source){
            type = 'sociedade')
   
   v_socio_pf <- socios %>% 
-    select(id = NUM_CPF, title = NOME_SOCIO) %>% 
+    select(id = ID_SOCIO, title = NOME_SOCIO) %>% 
     filter(nchar(id)==11) %>%
     mutate(group = 'PF') %>% 
     inner_join(select(a_socio, from:to), by=c('id'='from')) %>% 
@@ -353,9 +346,12 @@ load_data <- function(data_source){
     left_join(select(vertices, id), by='id')
   
   v_socio_pj <- socios %>% 
-    select(id = NUM_CPF, title = NOME_SOCIO) %>% 
-    filter(nchar(id)==14, !duplicated(id)) %>% 
+    select(id = ID_SOCIO, title = NOME_SOCIO) %>% 
+    filter(nchar(id)==14) %>% 
     mutate(group = 'PJ_PRIVADO') %>%
+    inner_join(select(a_socio, from:to), by=c('id'='from')) %>% 
+    select(-to) %>% 
+    filter(!duplicated(id)) %>%
     left_join(select(vertices, id), by='id')
   
   vertices <- vertices %>%
@@ -390,7 +386,7 @@ load_data <- function(data_source){
     ))
   
   a_parente <- parentesco %>%
-    mutate(start = NA, end = NA) %>%
+    mutate(start = as.character(NA), end = as.character(NA)) %>%
     filter(!is.na(CPF1)) %>%
     filter(!is.na(CPF2)) %>%
     filter(!(CPF1 == CPF2)) %>%
@@ -433,7 +429,7 @@ load_data <- function(data_source){
       str_detect(TIPO, pattern = 'não-efetivo') ~ 'servidor não efetivo',
       str_detect(TIPO, pattern = 'regime jurídico único') ~ 'servidor efetivo',
       str_detect(TIPO, pattern = 'indeterminado') ~ 'servidor contrato prazo indeterminado',
-      str_detect(TIPO, pattern = ' determinado') ~ 'servidor contrato prazo determinado',
+      str_detect(TIPO, pattern = 'determinado') ~ 'servidor contrato prazo determinado',
       str_detect(TIPO, pattern = 'temporário') ~ 'servidor contrato temporário',
       str_detect(TIPO, pattern = 'Aprendiz') ~ 'aprendiz contratado',
       T ~ 'servidor nomeado sem vínculo empregatício',
@@ -662,6 +658,7 @@ load_data <- function(data_source){
   
   
   # consolida as arestas e remove eventuais duplicatas e arestas quebradas
+ 
   arestas <- a_socio %>% 
     bind_rows(a_parente) %>% 
     #bind_rows(a_parente_servidor) %>% 
@@ -670,11 +667,19 @@ load_data <- function(data_source){
     bind_rows(a_vinculo_servidor_pub) %>%
     bind_rows(a_vinculo_socio_servidor)%>%
     bind_rows(a_empenho)
+   
+  
+  # arestas <- arestas %>%
+  #   mutate(start = as.character(start), end = as.character(end))
+  tryCatch({
+  arestas <- arestas %>%
+    filter(from %in% vertices$id, to %in% vertices$id) 
   
   arestas <- arestas %>%
-    filter(from %in% vertices$id, to %in% vertices$id) %>% 
     mutate(id = 1:nrow(arestas))%>%
-    unique()
+    unique() }, error = function(e){ 
+      message("Erro:",e)
+    })
   
   # remove eventuais vertices isolados
   vertices <- vertices %>%

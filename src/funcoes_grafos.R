@@ -63,7 +63,7 @@ build_source_graph <- function(graph_data){
            end = as.character(end)) %>%
     mutate(end = case_when(
       !is.na(start) ~ if_else(is.na(end), 'Tempo indefinido', end),
-      T ~ end)) %>% # adicionar  no titulo
+      T ~ end)) %>%
     mutate(title = case_when(
       !is.na(start) & type != 'empenho' ~ paste0("<p>", role, ":", start, " à ", end, "</p>"),
       T ~ role))%>%
@@ -90,15 +90,14 @@ build_source_graph <- function(graph_data){
   # filter(level==0, str_detect(group, 'PJ')) %>%
   # select(id) %>%
   # unlist()
-  filtro<- case_when(str_detect(nodes$group,'PJ_PRIVADO')~nodes$id)
+  filtro <- case_when(str_detect(nodes$group,'PJ_PRIVADO') ~ nodes$id)
   
-  filtro<-filtro[!is.na(filtro)]
+  filtro <- filtro[!is.na(filtro)]
   
   center_nodes <- nodes %>%
     filter(id %in% filtro, str_detect(group, 'PJ')) %>%
     select(id) %>%
     unlist()
-  
   
   #center_nodes <- filter(nodes, type == 0) %>% select(id) %>% unlist() #<---- Não
   

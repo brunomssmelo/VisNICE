@@ -16,10 +16,9 @@ require(formattable)
 #     source("./src/ui/proxy_graph_structure_ui.R", local = TRUE, encoding = 'UTF-8')$value
 #   )
 # )
-
 enableBookmarking(store = "server")
 
-shiny::shinyUI( function(){
+shiny::shinyUI(function(){
   dashboardPage(
     dashboardHeader(
       title = "Visualizador de Relacionamentos",
@@ -35,7 +34,7 @@ shiny::shinyUI( function(){
       
       sliderInput("sldRaioVizinhanca", label = "Raio da vizinhança", min = 1, 
                   max = 4, value = 1, width = '100%'),
-      bookmarkButton(label = "Salvar para depois", id = "bookmark"),
+      bookmarkButton(label = "Salvar para depois..."),
       tags$head(tags$style(type="text/css", "#bookmark {background-color:#428bca;color: #fff};")),
       div(
              #pickerInput("selectEdges", label = "Exibir Apenas:", choices = list("Socios" = "sociedade", "Parentes" = "parentesco", "Vinculo Empregaticio" = "vinculo_empregaticio"), multiple = TRUE),
@@ -81,7 +80,17 @@ shiny::shinyUI( function(){
           status = "primary",
           width = '100%'
         )),
-      
+      column(
+        width = 12,
+        style = "color: #000",
+        align = "left",
+        materialSwitch(
+          inputId = "switchStatic",
+          label = "Tornar o grafo estático para exportação",
+          value = FALSE,
+          status = "primary",
+          width = '100%'
+        )),
       column(
         width = 12,
         align = "left",
