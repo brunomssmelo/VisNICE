@@ -1,7 +1,7 @@
 SELECT DISTINCT 'SANÇÕES' AS CONSULTA
   , [TIPO DE PESSOA] AS TipoPessoa
   , [CPF OU CNPJ DO SANCIONADO formatado] AS CpfCnpjSancionado
-  , [NOME INFORMADO PELO ÓRGÃO SANCIONADOR] AS NomeOrgaoSancionador
+  , [NOME INFORMADO PELO ÓRGÃO SANCIONADOR] AS NomeEmpresaSancionada
   , [NOME FANTASIA - CADASTRO RECEITA] AS NomeFantasia
   , [NÚMERO DO PROCESSO] AS NumeroProcesso
   , [TIPO SANÇÃO] AS TipoSancao
@@ -18,12 +18,6 @@ SELECT DISTINCT 'SANÇÕES' AS CONSULTA
   , [OBSERVAÇÕES] AS Observacoes
   , [ESFERA] AS Esfera
   , [Unidade] AS Unidade
-  , [NUMERO EMPENHO] AS NumeroEmpenho
-  , [TIPO EMPENHO] AS TipoEmpenho
-  , [DATA EMPENHO] AS DataEmpenho
-  , [Valor  Empenho] AS ValorEmpenho
-  , [Vl Pago] AS ValorPago
-  , [CREDOR] AS Credor
   , [CNPJ] AS CnpjSancao
 FROM
   [IRIS_EMPENHO].[dbo].[resultadoTipologia_ceisPessoaJuridicaMunicipios]

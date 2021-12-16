@@ -63,10 +63,10 @@ build_source_graph <- function(graph_data){
            end = as.character(end)) %>%
     mutate(end = case_when(
       !is.na(start) ~ if_else(is.na(end), 'Tempo indefinido', end),
-      T ~ end)) %>% 
+      T ~ end)) %>%
     mutate(title = case_when(
-      !is.na(start) ~ paste0("<p>", role, ":", start, " à ", end, "</p>"),
-      T ~ role))%>% 
+      !is.na(start) & type != 'empenho' ~ paste0("<p>", role, ":", start, " à ", end, "</p>"),
+      T ~ role))%>%
     mutate(color = case_when(
       type == 'sociedade' ~ 'blue',
       type == 'vinculo_empregaticio' ~ 'purple',
@@ -90,17 +90,16 @@ build_source_graph <- function(graph_data){
   # filter(level==0, str_detect(group, 'PJ')) %>%
   # select(id) %>%
   # unlist()
-  filtro<- case_when(str_detect(nodes$group,'PJ_PRIVADO')~nodes$id)
+  # filtro <- case_when(str_detect(nodes$group,'PJ_PRIVADO') ~ nodes$id)
+  # 
+  # filtro <- filtro[!is.na(filtro)]
+  # 
+  # center_nodes <- nodes %>%
+  #   filter(id %in% filtro, str_detect(group, 'PJ')) %>%
+  #   select(id) %>%
+  #   unlist()
   
-  filtro<-filtro[!is.na(filtro)]
-  
-  center_nodes <- nodes %>%
-    filter(id %in% filtro, str_detect(group, 'PJ')) %>%
-    select(id) %>%
-    unlist()
-  
-  
-  #center_nodes <- filter(nodes, type == 0) %>% select(id) %>% unlist() #<---- Não
+  center_nodes <- filter(nodes, group == 'PJ_PRIVADO') %>% select(id) %>% unlist() #<---- Não
   
   ledges <- data.frame(color = c("blue", "red", "purple", "E5C039", "black"),
                        label = c("sócio", "parente", "vinc_servidor", "telefones", "empenhos"), arrows =c("to","to", "to", "to","to"))

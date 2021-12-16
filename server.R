@@ -31,7 +31,7 @@ source('./src/funcoes_grafos.R', encoding = "UTF-8")
 
 shinyServer(function(input, output, session){
   
-  sample_data_rds <- read_rds('./.dados/sample_data.rds')
+  sample_data_rds <- read_rds('./dados/sample_data.rds')
   
   selected_nodes <- reactiveVal(NULL)
   ego_radius <- reactiveVal(1)
@@ -39,6 +39,7 @@ shinyServer(function(input, output, session){
   is_sample_data <- reactiveVal(TRUE)
   select_cnpj<- reactiveVal(NULL)
   nos_selecionados <- reactiveVal(NULL)
+  cnpj <- reactiveVal(NULL)
   
   # As datas iniciais e finais do filtro de sócios coincidirão com as datas
   # mínimas e máximas dos vínculos societários presentes em toda a base de dados

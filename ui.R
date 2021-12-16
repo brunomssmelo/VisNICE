@@ -16,10 +16,9 @@ require(formattable)
 #     source("./src/ui/proxy_graph_structure_ui.R", local = TRUE, encoding = 'UTF-8')$value
 #   )
 # )
-
 enableBookmarking(store = "server")
 
-shiny::shinyUI( function(){
+shiny::shinyUI(function(){
   dashboardPage(
     dashboardHeader(
       title = "Visualizador de Relacionamentos",
@@ -35,13 +34,13 @@ shiny::shinyUI( function(){
       
       sliderInput("sldRaioVizinhanca", label = "Raio da vizinhança", min = 1, 
                   max = 4, value = 1, width = '100%'),
-      bookmarkButton(label = "Salvar para depois", id = "bookmark"),
+      bookmarkButton(label = "Salvar para depois..."),
       tags$head(tags$style(type="text/css", "#bookmark {background-color:#428bca;color: #fff};")),
       div(
              #pickerInput("selectEdges", label = "Exibir Apenas:", choices = list("Socios" = "sociedade", "Parentes" = "parentesco", "Vinculo Empregaticio" = "vinculo_empregaticio"), multiple = TRUE),
              #selectizeInput("op_parentes", label = "Escolha um tipo de Relacionamento:", choices = NULL, multiple = TRUE, width = '100%'),
             textInput(
-               "text_cnpj", label = "Consulta cnpj:", width = '100%'
+               "text_cnpj", label = "Consulta cnpj:", width = '100%', placeholder = "12345678;91234567;89123456"
              ),
             actionButton("search_cnpj", "Buscar"),
             tags$head(tags$style(type="text/css", "#search_cnpj {background-color:#428bca;color: #fff};"))
@@ -69,19 +68,17 @@ shiny::shinyUI( function(){
           status = "primary",
           width = '100%',
         )),
-      
       column(
         width = 12,
         style = "color: #000",
         align = "left",
         materialSwitch(
-          inputId = "switchChoose",
-          label = "Mudar para dados do Banco SQL",
+          inputId = "switchStatic",
+          label = "Tornar o grafo estático para exportação",
           value = FALSE,
           status = "primary",
           width = '100%'
         )),
-      
       column(
         width = 12,
         align = "left",
