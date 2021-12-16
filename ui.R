@@ -40,7 +40,7 @@ shiny::shinyUI(function(){
              #pickerInput("selectEdges", label = "Exibir Apenas:", choices = list("Socios" = "sociedade", "Parentes" = "parentesco", "Vinculo Empregaticio" = "vinculo_empregaticio"), multiple = TRUE),
              #selectizeInput("op_parentes", label = "Escolha um tipo de Relacionamento:", choices = NULL, multiple = TRUE, width = '100%'),
             textInput(
-               "text_cnpj", label = "Consulta cnpj:", width = '100%'
+               "text_cnpj", label = "Consulta cnpj:", width = '100%', placeholder = "12345678;91234567;89123456"
              ),
             actionButton("search_cnpj", "Buscar"),
             tags$head(tags$style(type="text/css", "#search_cnpj {background-color:#428bca;color: #fff};"))
@@ -67,18 +67,6 @@ shiny::shinyUI(function(){
           value = FALSE,
           status = "primary",
           width = '100%',
-        )),
-      
-      column(
-        width = 12,
-        style = "color: #000",
-        align = "left",
-        materialSwitch(
-          inputId = "switchChoose",
-          label = "Mudar para dados do Banco SQL",
-          value = FALSE,
-          status = "primary",
-          width = '100%'
         )),
       column(
         width = 12,

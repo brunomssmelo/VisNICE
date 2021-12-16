@@ -39,6 +39,7 @@ shinyServer(function(input, output, session){
   is_sample_data <- reactiveVal(TRUE)
   select_cnpj<- reactiveVal(NULL)
   nos_selecionados <- reactiveVal(NULL)
+  cnpj <- reactiveVal(NULL)
   
   # As datas iniciais e finais do filtro de sócios coincidirão com as datas
   # mínimas e máximas dos vínculos societários presentes em toda a base de dados

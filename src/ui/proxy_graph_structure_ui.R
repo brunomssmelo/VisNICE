@@ -16,6 +16,8 @@ shiny::tabsetPanel(id = 'tabset_principal',
                                          DT::DTOutput("tblParenteDetalhes")),
                                 tabPanel('Empenho',
                                          DT::DTOutput("tblEmpenhoDetalhes")),
+                                tabPanel('Vínculo Servidor',
+                                         DT::DTOutput("tblVincServidor")),
                                 tabPanel('Sanções',
                                          DT::DTOutput("tblSancoesDetalhes"))
                               ))),

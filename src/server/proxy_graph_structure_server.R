@@ -55,16 +55,22 @@ Seleciona_Dados <- function(selected_data, nome_input, tipo){
       
       selected_data <- nodes$id
       
-      updateMultiInput(session, nome_input,
-                       selected = selected_data)
+      # updateMultiInput(session, nome_input,
+      #                  selected = selected_data)
+      #selected_nodes(NULL)
+      return(selected_data)
     }) 
   }
+  
 }
 
 observe({
   
   selected_data_pj <- NULL
   selected_data_pf <- NULL
+  
+  # selected_data_pj <- Seleciona_Dados(selected_data_pj, "multiSelectNodesPJ", "PJ")
+  # selected_data_pf <- Seleciona_Dados(selected_data_pf, "multiSelectNodesPF", "PF")
   
   graph_nodes <- igraph::as_data_frame(dataos()$graph, what = 'vertices') %>% 
     rename(id = name)
@@ -88,9 +94,6 @@ observe({
   
   updateMultiInput(session, "multiSelectNodesPF",
                    choices = choices_pf, selected = selected_data_pf)
-  
-  Seleciona_Dados(selected_data_pj, "multiSelectNodesPJ", "PJ")
-  Seleciona_Dados(selected_data_pf, "multiSelectNodesPF", "PF")
 
   verifica_botoes(input$btnExcluiTodosPJ, "multiSelectNodesPJ")
   verifica_botoes(input$btnExcluiTodosPF, "multiSelectNodesPF")
@@ -126,9 +129,22 @@ observe({
     # atualiza raio de vizinhanca
     ego_radius(input$sldRaioVizinhanca)
     
-    # atualiza lista de nÃ³s selecionados
+    # selected_data_pj <- NULL
+    # selected_data_pf <- NULL
+    # 
+    # # atualiza lista de nÃ³s selecionados
+    # selected_data_pj <- Seleciona_Dados(selected_data_pj, "multiSelectNodesPJ", "PJ")
+    # selected_data_pf <- Seleciona_Dados(selected_data_pf, "multiSelectNodesPF", "PF")
+  
+    # if_else(selected != selected_data_pj, selected_nodes(selected), selected_nodes(NULL))
+    # if_else(selected != selected_data_pf, selected_nodes(selected), selected_nodes(NULL))
+    # selected <- selected %>%
+    # filter(!selected %in% selected_data_pj)
+    # selected <- selected[selected != selected_data_pj]
+    #selected <- strsplit(selected, selected_data_pj)
+    #if(length(selected) == length(selected)+1)
+    
     selected_nodes(selected)
-    #nos_selecionados(nos_selecionados_aba3)
 })
 
 observeEvent(input$network_auto_graphChange, {

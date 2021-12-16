@@ -226,15 +226,21 @@ load_data <- function(data_source){
   
   # melhorar isso aqui com checagens e tratamento de exceções
   if (is.null(data_source) || !file.exists(data_source)[1]) {
+    
     data <- load_from_sgbd(data_source)
+   
   }else{
-    data <- load_From_xlsx(data_source)
+    data <-load_From_xlsx(data_source)
   }
   
+  cnpjs_publico <- read_rds('./dados/df_cnpj_publico.rds')
+
   # Tabela "cnpj" ------------------------------------------------------------------------------------------
   cnpjs <- data$cnpjs
+ 
   
   cnpjs <- cnpjs %>%
+    mutate(NUM_CNPJ = str_pad(NUM_CNPJ, pad = '0', side = 'left', width = 14)) %>%
     mutate(NUM_DDD1 = as.character(NUM_DDD1), NUM_TELEFONE1 = as.character(NUM_TELEFONE1),
            NUM_DDD2 = as.character(NUM_DDD2), NUM_TELEFONE2 = as.character(NUM_TELEFONE2)) %>%
     mutate(
@@ -243,10 +249,18 @@ load_data <- function(data_source){
       TEL2 = case_when(
         !is.na(NUM_TELEFONE2) ~ paste(NUM_DDD2, NUM_TELEFONE2)))
   
-  v_cnpj <- cnpjs %>%
-    select(id = NUM_CNPJ, title = NOME) %>%
-    filter(nchar(id)==14, !duplicated(id)) %>%
-    mutate(group = 'PJ_PRIVADO')
+  v_cnpj_privado <- cnpjs %>% 
+    mutate(group = case_when(
+      NUM_CNPJ %in% cnpjs_publico$CNPJ ~ 'PJ_PUBLICO',
+      T ~ 'PJ_PRIVADO')) %>%
+    select(id = NUM_CNPJ, title = NOME, group) %>%
+    filter(nchar(id)==14, !duplicated(id))
+   
+  
+  # v_cnpj_publico <- cnpjs_publico %>%
+  #   select(id = CNPJ, title = NOME_EMPRESARIAL) %>%
+  #   filter(nchar(id)==14, !duplicated(id)) %>%
+  #   mutate(group = 'PJ_PUBLICO')
   
   v_telefones <- cnpjs %>%
     select(id = TEL2, title = TEL2) %>%
@@ -274,7 +288,7 @@ load_data <- function(data_source){
            type = 'telefone_empresa')
   
   
-  vertices <- v_cnpj %>%
+  vertices <- v_cnpj_privado %>%
     bind_rows(v_telefones)
   
   # Tabela "telefones" -------------------------------------------------------------------------------------
@@ -333,8 +347,12 @@ load_data <- function(data_source){
            end = DATA_DE_EXCLUSAO_NA_SOCIEDADE) %>% 
     filter(!is.na(from)) %>%
     filter(!is.na(to)) %>% 
-    mutate(role = 'socio',
-           type = 'sociedade')
+    group_by(from, to) %>%
+    summarise(start = min(start, na.rm = T), n = n(),end = max(end, na.rm = T)) %>%
+    ungroup() %>%
+    mutate(role = paste0('[', n, '] - socio')) %>%
+    select(-n) %>%
+    mutate(type = 'sociedade')
   
   v_socio_pf <- socios %>% 
     select(id = ID_SOCIO, title = NOME_SOCIO) %>% 
@@ -419,9 +437,12 @@ load_data <- function(data_source){
     filter(!duplicated(id))
   
   # Tabela "func_na_adm_publica" ---------------------------------------------------------------------------
-  
+  # cnpjs_publico <- read_rds('./dados/df_cnpj_publico.rds')
   func_na_adm_publica <- data$func_na_adm_publica
   
+  # cnpjs_publico <- cnpjs_publico %>%
+  #   mutate(CNPJ = str_pad(CNPJ, pad = '0', side = 'left', width = 14))
+
   func_na_adm_publica <- func_na_adm_publica %>%
     mutate(CO_CPF = str_pad(CO_CPF, pad = '0', side = 'left', width = 11),
            CO_CNPJ_CEI = str_pad(CO_CNPJ_CEI, pad = '0', side = 'left', width = 14)) %>%
@@ -433,8 +454,14 @@ load_data <- function(data_source){
       str_detect(TIPO, pattern = 'temporário') ~ 'servidor contrato temporário',
       str_detect(TIPO, pattern = 'Aprendiz') ~ 'aprendiz contratado',
       T ~ 'servidor nomeado sem vínculo empregatício',
-    ))
-  
+    )) %>% mutate(DATA_END = if_else(is.na(DA_DESLIGAMENTO_RAIS_DM), 
+                                 as.character(Sys.Date()), 
+                                 as.character(DA_DESLIGAMENTO_RAIS_DM)))
+  # %>% mutate(group = case_when(
+  #     CO_CNPJ_CEI %in% cnpjs_publico$CNPJ ~ 'PJ_PUBLICO',
+  #     T ~ 'PJ_PRIVADO'
+  #   ))
+
   v_servidor_pub <- func_na_adm_publica %>%
     filter(nchar(CO_CPF)==11) %>%
     select(id = CO_CPF, title = EMPREGADO) %>%
@@ -442,24 +469,30 @@ load_data <- function(data_source){
     mutate(group = 'PF')%>%
     filter(!duplicated(id)) %>%
     left_join(select(vertices, id), by='id')
-  
-  v_org_publico <- func_na_adm_publica %>%
+
+  v_org_publico <- func_na_adm_publica %>% 
     select(id = CO_CNPJ_CEI, title = EMPREGADOR) %>%
     filter(!is.na(id)) %>%
-    mutate(group = 'PJ_PUBLICO') %>%
+    mutate(group = 'PJ_PUBLICO')%>%
     filter(!duplicated(id)) %>%
     left_join(select(vertices, id), by='id')
-  
+
   a_vinculo_servidor_pub <- func_na_adm_publica %>%
     select(from = CO_CPF,
            to = CO_CNPJ_CEI,
            start = DA_ADMISSAO_RAIS_DMA,
            end = DA_DESLIGAMENTO_RAIS_DM,
-           role = TIPO_VINCULO) %>%
+           role = TIPO_VINCULO, 
+           DATA_END) %>%
     filter(!is.na(from)) %>%
     filter(!is.na(to)) %>%
+    group_by(from, to, role) %>%
+    summarise(start = min(start), n = n(),end = max(end)) %>%
+    ungroup() %>%
+    mutate(role = paste0('[', n, '] - ', role)) %>%
+    select(-n) %>%
     mutate(type = 'vinculo_empregaticio')
-  
+
   vertices <- vertices %>%
     bind_rows(v_servidor_pub) %>%
     bind_rows(v_org_publico)
@@ -486,14 +519,16 @@ load_data <- function(data_source){
     filter(!is.na(id)) %>%
     mutate(group = 'PF')%>%
     filter(!duplicated(id))%>%
-    left_join(select(vertices, id), by='id')
+    left_join(select(vertices, id), by='id') %>%
+    mutate_all(as.character)
   
   v_socio_org_publico <- socio_org_publico %>%
     select(id = CO_CNPJ_CEI, title = EMPREGADOR) %>%
     filter(!is.na(id)) %>%
     mutate(group = 'PJ_PUBLICO')%>%
     filter(!duplicated(id))%>%
-    left_join(select(vertices, id), by='id')
+    left_join(select(vertices, id), by='id') %>%
+    mutate_all(as.character)
   
   a_vinculo_socio_servidor <- socio_org_publico %>%
     select(from = CO_CPF,
@@ -503,7 +538,8 @@ load_data <- function(data_source){
            role = TIPO_VINCULO)%>%
     filter(!is.na(from)) %>%
     filter(!is.na(to)) %>%
-    mutate(type = 'vinculo_empregaticio')
+    mutate(type = 'vinculo_empregaticio') %>%
+    mutate_all(as.character)
   
   vertices <- vertices %>%
     bind_rows(v_socio_servidor) %>%
@@ -531,7 +567,7 @@ load_data <- function(data_source){
     filter(!is.na(from)) %>%
     filter(!is.na(to)) %>%
     group_by(from, to) %>% 
-    summarise(valor_total = sum(valor, na.rm = T), qntd, start,end) %>% 
+    summarise(valor_total = sum(valor, na.rm = T), qntd = sum(qntd, na.rm = T), start = min(start, na.rm = T),end = max(end, na.rm = T)) %>% 
     ungroup() %>% 
     mutate(role = paste0('[', qntd, '] - ',
                          as.character(currency(valor_total,
@@ -563,14 +599,14 @@ load_data <- function(data_source){
   # Ler arquivo que contém os cnpjs do orgao sancionador
    # df_cnpj_publico <- read_rds('./dados/df_cnpj_publico.rds')
   # 
-  sancionados <- data$sancionados
+   sancionados <- data$sancionados
   # 
   sancionados <- sancionados %>% mutate(TipoPessoa = case_when(
     str_detect(TipoPessoa, 'J')~"PJ_PRIVADO",
     str_detect(TipoPessoa,'F')~"PF",
     T~"PJ"
   )) %>% mutate(CpfCnpjSancionado = as.character( CpfCnpjSancionado ))
-  
+
   # # Procurar numero de cnpj do orgao sancionador e cria nova coluna com cnpjs
   # dummy <- sancionados %>%
   #   stringdist_join(df_cnpj_publico, by = c(OrgaoSancionador = "NOME_EMPRESARIAL"),  method = "osa", mode = "left", max_dist = 2, ignore_case = TRUE)
@@ -588,7 +624,7 @@ load_data <- function(data_source){
   #   mutate(group = TipoPessoa) %>%
   #   filter(!duplicated(id)) %>%
   #   left_join(select(vertices, id), by ='id')
-  # 
+  #  
   #   v_orgao_sancionador <- sancionados %>%
   #     select(id = join_cnpj, title = OrgaoSancionador) %>%
   #     filter(!duplicated(id)) %>%
@@ -597,7 +633,7 @@ load_data <- function(data_source){
   # vertices <- vertices %>%
   #   bind_rows(v_empresa_sancionada) %>%
   #   bind_rows(v_orgao_sancionador)
-  
+
   #Verificacao se o cnpj informado e sancionado e mudanca da coloracao para vermelho
   # vertices <- vertices %>%
   #   mutate(role = case_when(
@@ -659,7 +695,7 @@ load_data <- function(data_source){
   
   # consolida as arestas e remove eventuais duplicatas e arestas quebradas
  
-  arestas <- a_socio %>% 
+   arestas <- a_socio %>% 
     bind_rows(a_parente) %>% 
     #bind_rows(a_parente_servidor) %>% 
     bind_rows(a_tel_empresa) %>%
@@ -674,13 +710,13 @@ load_data <- function(data_source){
   tryCatch({
   arestas <- arestas %>%
     filter(from %in% vertices$id, to %in% vertices$id) 
-  
-  arestas <- arestas %>%
-    mutate(id = 1:nrow(arestas))%>%
-    unique() }, error = function(e){ 
+ 
+  arestas <- arestas %>% 
+    bind_cols(id = 1:nrow(arestas))%>%
+    unique() 
+  }, error = function(e){ 
       message("Erro:",e)
     })
-  
   # remove eventuais vertices isolados
   vertices <- vertices %>%
     filter(id %in% arestas$from | id %in% arestas$to)
@@ -696,7 +732,8 @@ load_data <- function(data_source){
       empenho = empenhos,
       parentesco = parentesco,
       socio = socios,
-      sancionado = sancionados
+      sancionado = sancionados,
+      func_na_adm_publica = func_na_adm_publica
     )
   )
   
